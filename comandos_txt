@@ -1,0 +1,3 @@
+./parsecmgt -a build -p splash2x.volrend
+./parsecmgt -a uninstall -p splash2x.volrend
+./parsecmgt -a fullclean -p splash2x.volrend
