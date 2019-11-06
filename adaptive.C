@@ -233,7 +233,7 @@ void Ray_Trace_Adaptively(long my_node)
     xstop = image_len[X];
     ystart = 0;
     ystop = image_len[Y];
-    #pragma omp for schedule(dynamic, 8) private(work)
+    #pragma omp for schedule(dynamic, 8)
     for(work = 0; work < lnum_blocks; work++)
     {
     /*   while (work < lnum_blocks)
@@ -433,14 +433,15 @@ void Ray_Trace_Non_Adaptively(long my_node)
     ystop = image_len[Y];
     int i = 0;
 
+    
+      float foutx, fouty;
+      long outx, outy, xindex, yindex;
 
     /* printf("%i, ", omp_get_num_threads()); */
-    #pragma omp for schedule(dynamic, 8) private(work)
+    #pragma omp for schedule(dynamic, 8)
     for(work = 0; work < lnum_blocks; work++)
     {
 
-      float foutx, fouty;
-      long outx, outy, xindex, yindex;
    /*  while (work < lnum_blocks)
     { */
       xindex = xstart + (work % lnum_xblocks) * block_xlen;

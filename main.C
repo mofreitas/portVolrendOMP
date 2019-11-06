@@ -274,7 +274,7 @@ void Render_Loop()
   //long image_partition, mask_image_partition;
   //float inv_num_nodes;
   long my_node = omp_get_thread_num();
-#pragma omp barrier
+//#pragma omp barrier
   /**
    * Modificado
   **/
@@ -373,39 +373,40 @@ void Render_Loop()
 
         #pragma omp single
         { 
-        if (ROTATE_STEPS > 1)
-        {
-#ifdef DIM
-          sprintf(outfile, "%s_%ld", filename, 1000 + dim * ROTATE_STEPS + step);
-          sprintf(outfile2, "%s_%ld.txt", "saida_", 1000 + dim * ROTATE_STEPS + step);
-#else
-        sprintf(outfile, "%s_%ld.tiff", filename, 1000 + step);
-        sprintf(outfile2, "%s_%ld.txt", "saida_", 1000 + step);
-#endif
-          /*	  Store_Image(outfile);
-          p = image_address;
-          for (zz = 0;zz < image_length;zz++) {
-            tiff_image[zz] = (long) ((*p)*256*256*256 + (*p)*256*256 +
-				    (*p)*256 + (*p));
-	    p++;
-          }
-tiff_save_rgba(outfile,tiff_image,image_len[X],image_len[Y]);  */
-          WriteGrayscaleTIFF(outfile, outfile2, image_len[X], image_len[Y], image_len[X], image_address);
-        }
-        else
-        {
-          /*	  Store_Image(filename);
-	  p = image_address;
-          for (zz = 0;zz < image_length;zz++) {
-            tiff_image[zz] = (long) ((*p)*256*256*256 + (*p)*256*256 +
-				    (*p)*256 + (*p));
-	    p++;
-          }
-tiff_save_rgba(filename,tiff_image,image_len[X],image_len[Y]);    */
-          strcat(filename, ".tiff");
-          WriteGrayscaleTIFF(filename, "foi",  image_len[X], image_len[Y], image_len[X], image_address);
-        }
-      } 
+                if (ROTATE_STEPS > 1)
+                {
+        #ifdef DIM
+                  sprintf(outfile, "%s_%ld", filename, 1000 + dim * ROTATE_STEPS + step);
+                  sprintf(outfile2, "%s_%ld.txt", "saida_", 1000 + dim * ROTATE_STEPS + step);
+        #else
+                sprintf(outfile, "%s_%ld.tiff", filename, 1000 + step);
+                sprintf(outfile2, "%s_%ld.txt", "saida_", 1000 + step);
+        #endif
+                  /*	  Store_Image(outfile);
+                  p = image_address;
+                  for (zz = 0;zz < image_length;zz++) {
+                    tiff_image[zz] = (long) ((*p)*256*256*256 + (*p)*256*256 +
+				            (*p)*256 + (*p));
+	            p++;
+                  }
+        tiff_save_rgba(outfile,tiff_image,image_len[X],image_len[Y]);  */
+                  WriteGrayscaleTIFF(outfile, outfile2, image_len[X], image_len[Y], image_len[X], image_address);
+                }
+                else
+                {
+                  /*	  Store_Image(filename);
+	          p = image_address;
+                  for (zz = 0;zz < image_length;zz++) {
+                    tiff_image[zz] = (long) ((*p)*256*256*256 + (*p)*256*256 +
+				            (*p)*256 + (*p));
+	            p++;
+                  }
+        tiff_save_rgba(filename,tiff_image,image_len[X],image_len[Y]);    */
+                  strcat(filename, ".tiff");
+                  WriteGrayscaleTIFF(filename, "foi",  image_len[X], image_len[Y], image_len[X], image_address);
+                }
+            
+        } 
     }
 #ifdef DIM
   }

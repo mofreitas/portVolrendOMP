@@ -496,14 +496,16 @@ void Pre_Shade(long my_node)
 {
   long xnorm, ynorm, znorm, table_addr, norm_lshift;
   long shd_table_partition, zstart, zstop;
-  float mag, error, inv_num_nodes;
-  float normal[NM];
-  float dot_product, diffuse, specular, color;
-  float dpartial_product1, dpartial_product2;
-  float spartial_product1, spartial_product2;
-  long temp;
+  float error;
+  float mag;
+    float normal[NM];
+    float dot_product, diffuse, specular, color;
+    float dpartial_product1, dpartial_product2;
+    float spartial_product1, spartial_product2;
+    long temp;
+ 
 
-  inv_num_nodes = 1.0 / (float)num_nodes;
+  //inv_num_nodes = 1.0 / (float)num_nodes;
 
   norm_lshift = NORM_LSHIFT;
   error = -2.0 * NORM_RSHIFT * NORM_RSHIFT;
@@ -511,10 +513,12 @@ void Pre_Shade(long my_node)
   //#pragma omp parallel num_threads(4)
   //{
     
-  shd_table_partition = ROUNDUP((float)LOOKUP_PREC * inv_num_nodes);
-  zstart = -norm_lshift + shd_table_partition * my_node;
-  zstop = MIN(zstart + shd_table_partition, norm_lshift + 1);
-
+  //shd_table_partition = ROUNDUP((float)LOOKUP_PREC * inv_num_nodes);
+  zstart = -norm_lshift ;//+ shd_table_partition * my_node;
+  zstop = norm_lshift + 1;//MIN(zstart + shd_table_partition, norm_lshift + 1);
+  
+ 
+  
   /*  POSSIBLE ENHANCEMENT:  If you did want to replicate the shade table
 on all processors, then include these two lines here to set
 zstart and zstop differently:
@@ -526,8 +530,9 @@ IMPORTANT:  Note that this makes the pre-shading entirely
 serial in every frame, so you won't get parallelism on that part
 of the frame.
 */
+  #pragma omp for schedule(dynamic, 4)
   for (znorm = zstart; znorm < zstop; znorm++)
-  {
+  {      
     for (ynorm = -norm_lshift; ynorm <= norm_lshift; ynorm++)
     {
       normal[Z] = (float)znorm * NORM_RSHIFT;
