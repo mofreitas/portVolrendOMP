@@ -13,32 +13,29 @@ import os
 #data = []
 #for f1 in files:
 
+folder = "../../run/"
+files = [f for f in os.listdir(folder) if f.endswith(".txt")]
 writer = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc(*"MJPG"), 10.0, (640,480))
-for frameid ,file in enumerate(os.listdir("./")):
-    if file.endswith(".txt"):        
-        img = np.zeros((380, 380), dtype=np.uint8)
-        f = open("./"+file, "r")
-        i = 0
-        for line in f.readlines():
-            if(line == "\n" or line == ""):
-                continue
+for frameid ,file in enumerate(files):
+    img = np.zeros((380, 380), dtype=np.uint8)
+    f = open(folder+file, "r")
+    i = 0
+    for line in f.readlines():
+        if(line == "\n" or line == ""):
+            continue
                       
-            r = np.array(line.replace("\n", "0").split("|"), dtype=np.uint8)
-            #print(r)
-            try:
-                #sim_large = 187
-                img[i, 0:len(r)] = r
-            except ValueError:        
-                continue
-            i += 1
+        r = np.array(line.replace("\n", "0").split("|"), dtype=np.uint8)
+        try:
+            img[i, 0:len(r)] = r
+        except ValueError:        
+            continue
+        i += 1
             
-        img = np.pad(img.T, ((int((480-380)/2), int((480-380)/2)), (int((640-380)/2), int((640-380)/2))), 'constant', constant_values=((0, 0), (0, 0)))
-        backtorgb = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
-        #img = np.tile(img, 3).T.reshape((480, 640, 3))
-        print(f"Quadro {frameid}, {backtorgb.shape}")
-        writer.write(backtorgb)
-        if(frameid>1000):
-            break;
+    img = np.pad(img.T, ((int((480-380)/2), int((480-380)/2)), (int((640-380)/2), int((640-380)/2))), 'constant', constant_values=((0, 0), (0, 0)))
+    backtorgb = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
+    #img = np.tile(img, 3).T.reshape((480, 640, 3))
+    print(f"Quadro {frameid}, {backtorgb.shape}")
+    writer.write(backtorgb)
         
     #data.append(img)
 

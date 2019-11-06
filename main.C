@@ -608,7 +608,7 @@ long WriteGrayscaleTIFF(char *filename, char *filename_txt, long width, long hei
   for (c = 0; c < 256; c++)
     cmap[c] = (long)(c * factor);
 
-   FILE* saida;
+   /*FILE* saida;
 	    saida = fopen(filename_txt, "w");
 	    long i;
 	    if(saida!=NULL){
@@ -625,7 +625,7 @@ long WriteGrayscaleTIFF(char *filename, char *filename_txt, long width, long hei
 	        printf("NULllol %s \n", filename_txt);
 	    }  
       
-	        fclose(saida);  
+	        fclose(saida);  */
 
   /* open and initialize output file */
   if ((outimage = TIFFOpen(filename, "w")) == NULL)
