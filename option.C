@@ -24,6 +24,7 @@
 
 long block_xlen,block_ylen;
 BOOLEAN adaptive;               /* adaptive ray tracing?                     */
+BOOLEAN output_txt;
 
 				/* During shading:                           */
 long density_epsilon;	        /*   minimum (density*map_divisor)           */

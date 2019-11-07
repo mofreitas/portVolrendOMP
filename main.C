@@ -89,13 +89,24 @@ int main(int argc, char *argv[])
 
   strcpy(filename, argv[2]);
 
-  if (argc == 5)
-  {
-    if (strncmp(argv[4], "-a", strlen("-a")) == 0)
+  if (argc == 5) {
+    if (strncmp(argv[4],"-a",strlen("-a")) == 0)
       adaptive = YES;
-    else
-    {
-      printf("usage:  VOLREND num_processes input_file ROTATE_STEPS [-a] \n");
+    else if (strncmp(argv[4],"-o",strlen("-o")) == 0){
+      output_txt = YES;
+    }
+    else {
+      printf("usage:  VOLREND num_processes input_file ROTATE_STEPS [-a] [-o] \n");
+      exit(-1);
+    }
+  }
+
+  if (argc == 6) {
+    if (strncmp(argv[4],"-a",strlen("-a")) == 0 && strncmp(argv[5],"-o",strlen("-o")) == 0)
+      adaptive = YES;
+      output_txt = YES;
+    else {
+      printf("usage:  VOLREND num_processes input_file ROTATE_STEPS [-a] [-o] \n");
       exit(-1);
     }
   }
@@ -608,6 +619,7 @@ long WriteGrayscaleTIFF(char *filename, char *filename_txt, long width, long hei
   for (c = 0; c < 256; c++)
     cmap[c] = (long)(c * factor);
 
+  if(output_txt){
    FILE* saida;
 	    saida = fopen(filename_txt, "w");
 	    long i;
@@ -622,10 +634,11 @@ long WriteGrayscaleTIFF(char *filename, char *filename_txt, long width, long hei
             fprintf(saida,"\n");
 	    }
 	    else{
-	        printf("NULllol %s \n", filename_txt);
+	        printf("Erro ao gerar %s \n", filename_txt);
 	    }  
       
-	        fclose(saida);  
+	        fclose(saida);
+  }  
 
   /* open and initialize output file */
   if ((outimage = TIFFOpen(filename, "w")) == NULL)
