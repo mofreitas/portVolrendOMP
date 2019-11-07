@@ -229,9 +229,7 @@ void Ray_Trace_Adaptively(long my_node)
     
       Executa enquanto o número de tiles trabalhadas for menor
       que o número de tiles do superbloco (percorre superbloco tile a tile) */
-    xstart = 0;
     xstop = image_len[X];
-    ystart = 0;
     ystop = image_len[Y];
     #pragma omp for schedule(dynamic, 8)
     for(work = 0; work < lnum_blocks; work++)
@@ -239,8 +237,8 @@ void Ray_Trace_Adaptively(long my_node)
     /*   while (work < lnum_blocks)
       {
         Percorre tile com passos de highest_sampling_boxlen */
-      xindex = xstart + (work % lnum_xblocks) * block_xlen;
-      yindex = ystart + (work / lnum_xblocks) * block_ylen;
+      xindex = (work % lnum_xblocks) * block_xlen;
+      yindex = (work / lnum_xblocks) * block_ylen;
       for (outy = yindex; outy < yindex + block_ylen && outy < ystop;
            outy += highest_sampling_boxlen)
       {
@@ -427,9 +425,7 @@ void Ray_Trace_Non_Adaptively(long my_node)
     ALOCK(Global->QLock, local_node);
     work = Global->Queue[local_node][0]++;
     AULOCK(Global->QLock, local_node); */
-    xstart = 0;
     xstop = image_len[X];
-    ystart = 0;
     ystop = image_len[Y];
     int i = 0;
 
@@ -444,8 +440,8 @@ void Ray_Trace_Non_Adaptively(long my_node)
 
    /*  while (work < lnum_blocks)
     { */
-      xindex = xstart + (work % lnum_xblocks) * block_xlen;
-      yindex = ystart + (work / lnum_xblocks) * block_ylen;
+      xindex = (work % lnum_xblocks) * block_xlen;
+      yindex = (work / lnum_xblocks) * block_ylen;
       for (outy = yindex; outy < yindex + block_ylen && outy < ystop; outy++)
       {
         for (outx = xindex; outx < xindex + block_xlen && outx < xstop; outx++)
@@ -480,7 +476,8 @@ void Ray_Trace_Non_Adaptively(long my_node)
   /* } */
 }
 
-void Ray_Trace_Fast_Non_Adaptively(long my_node)
+//Não usado no programa
+/*void Ray_Trace_Fast_Non_Adaptively(long my_node)
 {
   long i, outx, outy, xindex, yindex;
   float foutx, fouty;
@@ -500,8 +497,8 @@ void Ray_Trace_Fast_Non_Adaptively(long my_node)
            outx += lowest_volume_boxlen)
       {
 
-        /* Trace ray from specified image space location into map.   */
-        /* Stochastic sampling is as described in adaptive code.     */
+        // Trace ray from specified image space location into map.   
+        // Stochastic sampling is as described in adaptive code.     
         MASK_IMAGE(outy, outx) += RAY_TRACED;
         foutx = (float)(outx);
         fouty = (float)(outy);
@@ -511,17 +508,17 @@ void Ray_Trace_Fast_Non_Adaptively(long my_node)
       }
     }
   }
-}
+}*/
 
 void Interpolate_Recursively(long my_node)
 {
   long i, outx, outy, xindex, yindex;
 
-  //#pragma omp parallel for schedule(static, 20) num_threads(8)
-  for (i = 0; i < num_blocks; i += num_nodes)
+  #pragma omp for schedule(dynamic, 4)
+  for (i = 0; i < num_blocks; i++)
   {
-    yindex = ((my_node + i) / num_xblocks) * block_ylen;
-    xindex = ((my_node + i) % num_xblocks) * block_xlen;
+    yindex = (i / num_xblocks) * block_ylen;
+    xindex = (i % num_xblocks) * block_xlen;
 
     for (outy = yindex; outy < yindex + block_ylen &&
                         outy < image_len[Y];

@@ -102,9 +102,10 @@ int main(int argc, char *argv[])
   }
 
   if (argc == 6) {
-    if (strncmp(argv[4],"-a",strlen("-a")) == 0 && strncmp(argv[5],"-o",strlen("-o")) == 0)
+    if (strncmp(argv[4],"-a",strlen("-a")) == 0 && strncmp(argv[5],"-o",strlen("-o")) == 0){
       adaptive = YES;
       output_txt = YES;
+    }
     else {
       printf("usage:  VOLREND num_processes input_file ROTATE_STEPS [-a] [-o] \n");
       exit(-1);

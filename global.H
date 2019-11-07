@@ -36,6 +36,8 @@ extern long shd_length;
                                 /* Option globals                            */
 extern BOOLEAN adaptive;        /* YES for adaptive ray tracing, NO if not   */
                                 /* Shading parameters of reflective surface: */
+extern BOOLEAN output_txt;
+							
 extern float density_opacity[MAX_DENSITY+1];
                                 /*   opacity as function of density          */
 extern float magnitude_opacity[MAX_MAGNITUDE+1];
@@ -163,7 +165,8 @@ void Ray_Trace(long my_node);
 void Ray_Trace_Adaptively(long my_node);
 void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen);
 void Ray_Trace_Non_Adaptively(long my_node);
-void Ray_Trace_Fast_Non_Adaptively(long my_node);
+//Não usado no programa
+//void Ray_Trace_Fast_Non_Adaptively(long my_node);
 void Interpolate_Recursively(long my_node);
 void Interpolate_Recursive_Box(long outx, long outy, long boxlen);
 
