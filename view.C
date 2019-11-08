@@ -48,7 +48,7 @@ float invmatrix[4][4];		/* Inverse of viewing matrix:                */
 /*   (orthographic projection used, so       */
 /*    matrix[][3] = 0, matrix[3][3] = 1)     */
 
-EXTERN_ENV
+//EXTERN_ENV
 
 void Compute_Pre_View()
 {

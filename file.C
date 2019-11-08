@@ -22,7 +22,7 @@
 #define	PMODE	0644		/* RW for owner, R for group, R for others */
 #define	RWMODE	0		/* Read-only                               */
 
-EXTERN_ENV
+//EXTERN_ENV
 
 int Create_File(char filename[])
 {

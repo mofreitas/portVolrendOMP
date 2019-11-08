@@ -33,7 +33,7 @@ extern long traversal_time, trilirp_time, init_time, composite_time;
 #define SBIT(TA) (*SBIT_ADDRESS(TA))
 #define SHD(TA) (*SHD_ADDRESS(TA))
 
-EXTERN_ENV
+//EXTERN_ENV
 
 void Trace_Ray(foutx, fouty, pixel_address) float foutx, fouty;
 PIXEL *pixel_address;
@@ -492,7 +492,7 @@ end_of_ray:;
   *pixel_address = NINT(ray_color);
 }
 
-void Pre_Shade(long my_node)
+void Pre_Shade()
 {
   long xnorm, ynorm, znorm, table_addr, norm_lshift;
   long shd_table_partition, zstart, zstop;

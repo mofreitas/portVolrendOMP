@@ -65,7 +65,7 @@ long pyr_offset1,		/* Bit offset of desired bit within pyramid  */
      pyr_offset2;		/* Bit offset of bit within byte             */
 BYTE *pyr_address2;		/* Pointer to byte containing bit            */
 
-EXTERN_ENV
+//EXTERN_ENV
 
 #include "anl.h"
 
@@ -92,32 +92,48 @@ void Compute_Octree()
 
   printf("    Computing octree base...\n");
 
-  Global->Index = NODE0;
+/*   Global->Index = NODE0; */
 
 /*  POSSIBLE ENHANCEMENT:  If you did want to replicate the octree
 on all processors, don't do this create.
 */
 
-#ifndef SERIAL_PREPROC
+/* #ifndef SERIAL_PREPROC
   for (i=1; i<num_nodes; i++) CREATE(Compute_Base)
-#endif
+#endif */
 
+#ifndef SERIAL_PREPROC
+ #pragma omp parallel num_threads(num_nodes)
+  {
+    #pragma omp single
+    {
+      Compute_Base();
+    }
+    #pragma omp taskwait
+  }
+#else
   Compute_Base();
+#endif  
 
   printf("    Performing OR of eight neighbors in binary mask...\n");
 
-  Global->Index = 0;
+  //Global->Index = 0;
 
 
 /*  POSSIBLE ENHANCEMENT:  If you did want to replicate the octree
 on all processors, don't do this create.
 */
 
-#ifndef SERIAL_PREPROC
+/* #ifndef SERIAL_PREPROC
   for (i=1; i<num_nodes; i++) CREATE(Or_Neighbors_In_Base)
-#endif
+#endif */
 
-  Or_Neighbors_In_Base();
+#ifndef SERIAL_PREPROC
+#pragma omp parallel num_threads(num_nodes)
+#endif
+      Or_Neighbors_In_Base();
+
+  
 
   for (level=1; level<pyr_levels; level++) {
     for (i=0; i<NM; i++) {
@@ -148,48 +164,31 @@ void Compute_Base()
   long zstart,zstop;
   long num_xqueue,num_yqueue,num_zqueue,num_queue;
   long xstart,xstop,ystart,ystop;
-  long my_node;
 
-  LOCK(Global->IndexLock);
-  my_node = Global->Index++;
-  UNLOCK(Global->IndexLock);
-  my_node = my_node%num_nodes;
-
-/*  POSSIBLE ENHANCEMENT:  Here's where one might bind the process to a
-    processor, if one wanted to.
-*/
-
-  num_xqueue = ROUNDUP((float)pyr_len[0][X]/(float)voxel_section[X]);
-  num_yqueue = ROUNDUP((float)pyr_len[0][Y]/(float)voxel_section[Y]);
-  num_zqueue = ROUNDUP((float)pyr_len[0][Z]/(float)voxel_section[Z]);
-  num_queue = num_xqueue * num_yqueue * num_zqueue;
-  xstart = (my_node % voxel_section[X]) * num_xqueue;
-  xstop = MIN(xstart+num_xqueue,pyr_len[0][X]);
-  ystart = ((my_node / voxel_section[X]) % voxel_section[Y]) * num_yqueue;
-  ystop = MIN(ystart+num_yqueue,pyr_len[0][Y]);
-  zstart = (my_node / (voxel_section[X] * voxel_section[Y])) * num_zqueue;
-  zstop = MIN(zstart+num_zqueue,pyr_len[0][Z]);
-
+  
 /*  POSSIBLE ENHANCEMENT:  If you did want to replicate the octree
 on all processors, then execute what's in the SERIAL_PREPROC ifdef below.
 */
 
-#ifdef SERIAL_PREPROC
+/* #ifdef SERIAL_PREPROC */
   zstart = 0;
   zstop = pyr_len[0][Z];
   ystart = 0;
   ystop = pyr_len[0][Y];
   xstart = 0;
   xstop = pyr_len[0][X];
-#endif
+/* #endif */
 
   for (outz=zstart; outz<zstop; outz++) {
     for (outy=ystart; outy<ystop; outy++) {
       for (outx=xstart; outx<xstop; outx++) {
+        #pragma omp task
+        {
 	if (OPC(outz,outy,outx) == 0)     /* mask bit is one unless opacity */
 	  WRITE_PYR(0,0,outz,outy,outx);  /* value is zero.                 */
 	else
 	  WRITE_PYR(1,0,outz,outy,outx);
+        }
       }
     }
   }
@@ -199,9 +198,9 @@ on all processors, then this computation is serial and you don't need
 this barrier either.
 */
 
-#ifndef SERIAL_PREPROC
+/* #ifndef SERIAL_PREPROC
   BARRIER(Global->SlaveBarrier,num_nodes);
-#endif
+#endif */
 }
 
 
@@ -211,37 +210,40 @@ void Or_Neighbors_In_Base()
   long outx_plus_one,outy_plus_one,outz_plus_one;
   BOOLEAN bit;
   long pmap_partition,zstart,zstop;
-  long my_node;
+  /* long my_node; */
 
-  LOCK(Global->IndexLock);
+  /* LOCK(Global->IndexLock);
   my_node = Global->Index++;
   UNLOCK(Global->IndexLock);
-  my_node = my_node%num_nodes;
+  my_node = my_node%num_nodes; */
 
 /*  POSSIBLE ENHANCEMENT:  Here's where one might bind the process to a
     processor, if one wanted to.
 */
 
   /* assumed for now that z direction has enough parallelism */
-  pmap_partition = ROUNDUP((double)pyr_len[0][Z]/(double)num_nodes);
-  zstart = pmap_partition * my_node;
-  zstop = MIN(zstart+pmap_partition,pyr_len[0][Z]);
+  /* pmap_partition = ROUNDUP((double)pyr_len[0][Z]/(double)num_nodes); */
+  /* zstart = pmap_partition * my_node;
+  zstop = MIN(zstart+pmap_partition,pyr_len[0][Z]); */
 
 /*  POSSIBLE ENHANCEMENT:  If you did want to replicate the octree
 on all processors, then you should execute what's in the SERIAL_PREPROC
   ifdef below.
 */
 
-#ifdef SERIAL_PREPROC
+/* #ifdef SERIAL_PREPROC */
   zstart = 0;
   zstop = pyr_len[0][Z];
+/* #endif */
+#ifndef SERIAL_PREPROC
+  #pragma omp for schedule(dynamic, 4)
 #endif
-
   for (outz=zstart; outz<zstop; outz++) {
-    outz_plus_one = MIN(outz+1,pyr_len[0][Z]-1);
-    for (outy=0; outy<pyr_len[0][Y]; outy++) {
+    outz_plus_one = MIN(outz+1,pyr_len[0][Z]-1);    
+    for (outy=0; outy<pyr_len[0][Y]; outy++) {      
       outy_plus_one = MIN(outy+1,pyr_len[0][Y]-1);
       for (outx=0; outx<pyr_len[0][X]; outx++) {
+        
 	outx_plus_one = MIN(outx+1,pyr_len[0][X]-1);
 
 	bit = PYR(0,outz,outy,outx);
@@ -254,6 +256,7 @@ on all processors, then you should execute what's in the SERIAL_PREPROC
 	bit |= PYR(0,outz_plus_one,outy_plus_one,outx_plus_one);
 
 	WRITE_PYR(bit,0,outz,outy,outx);
+        
       }
     }
   }
@@ -263,9 +266,9 @@ on all processors, then this computation is serial and you don't
 need this barrier either.
 */
 
-#ifndef SERIAL_PREPROC
+/* #ifndef SERIAL_PREPROC
   BARRIER(Global->SlaveBarrier,num_nodes);
-#endif
+#endif */
 }
 
 

@@ -52,7 +52,7 @@ DENSITY *map_address;		/* Pointer to map                            */
 
 /* End of layout of .den file.                                               */
 
-EXTERN_ENV
+//EXTERN_ENV
 
 
 void Load_Map(filename)

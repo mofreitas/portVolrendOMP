@@ -37,7 +37,7 @@ else:
 
 if(VIDEO_MODE):
     files = [f for f in os.listdir(VIDEO_FOLDER) if f.endswith(".txt")]
-    writer = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc(*"MJPG"), 20.0, (640,480))
+    writer = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc(*"FMP4"), 20.0, (640,480))
     if(len(files)==0):
         print("Não foram achado arquivos de textos nesta pasta")
         exit(1)
@@ -47,6 +47,7 @@ if(VIDEO_MODE):
         i = 0
         pad_r = -1
         pad_l = -1
+        pad_t = -1
 
         try:
             f = open(VIDEO_FOLDER+"/"+file, "r")          
@@ -57,10 +58,10 @@ if(VIDEO_MODE):
 
                 r = np.array(line.replace("\n", "0").split("|"), dtype=np.uint8)   
                 if(pad_l == -1):
-                    pad_l = int((380-len(r))/2)
-                    pad_r = int(np.floor((380-len(r))/2))
+                    pad_l = pad_t = int((380-len(r))/2)
+                    pad_r = int(np.ceil((380-len(r))/2))
 
-                img[i, :] = np.pad(r, pad_width=(pad_l, pad_r), constant_values=(0, 0))            
+                img[i+pad_t, :] = np.pad(r, pad_width=(pad_l, pad_r), constant_values=(0, 0))            
                 i += 1
                 
             if(frameid > FRAMES):
@@ -84,13 +85,21 @@ else:
     try:
         f = open(IMAGE_FILE, "r")       
         i = 0
+        pad_r = -1
+        pad_l = -1
+        pad_t = -1
 
         for line in f.readlines():
             if(line == "\n" or line == ""):
                 continue
                                 
             r = np.array(line.replace("\n", "0").split("|"), dtype=np.uint8)
-            img[i, 0:len(r)] = r
+            
+            if(pad_l == -1):
+                pad_l = pad_t = int((380-len(r))/2)
+                pad_r = int(np.ceil((380-len(r))/2)) 
+                          
+            img[i+pad_t, :] = np.pad(r, pad_width=(pad_l, pad_r), constant_values=(0, 0))
             i += 1
 
         print("Saída: {}.png".format(IMAGE_FILE.split("/")[-1].split(".")[0]))

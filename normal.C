@@ -42,7 +42,7 @@ NORMAL *norm_address;		/* Pointer to normal map                     */
 
 float nmag_epsilon;
 
-EXTERN_ENV
+//EXTERN_ENV
 
 #include "anl.h"
 
@@ -60,13 +60,24 @@ void Compute_Normal()
 
   printf("    Computing normal...\n");
 
-  Global->Index = NODE0;
+  /* Global->Index = NODE0;
 
 #ifndef SERIAL_PREPROC
   for (i=1; i<num_nodes; i++) CREATE(Normal_Compute)
-#endif
-
-  Normal_Compute();
+#endif */
+  #ifndef SERIAL_PREPROC
+    #pragma omp parallel num_threads(num_nodes)
+    {
+      #pragma omp single
+      {
+        Normal_Compute();
+      }
+      #pragma omp taskwait
+    }
+  #else
+    Normal_Compute();
+  #endif
+  
 }
 
 
@@ -103,12 +114,11 @@ void Normal_Compute()
   long xnorm,ynorm,znorm,norm0;
   long num_xqueue,num_yqueue,num_zqueue,num_queue;
   long xstart,xstop,ystart,ystop;
-  long my_node;
 
-  LOCK(Global->IndexLock);
+  /* LOCK(Global->IndexLock);
   my_node = Global->Index++;
   UNLOCK(Global->IndexLock);
-  my_node = my_node%num_nodes;
+  my_node = my_node%num_nodes; */
 
 /*  POSSIBLE ENHANCEMENT:  Here's where one might bind the process to a
     processor, if one wanted to.
@@ -119,7 +129,7 @@ void Normal_Compute()
   norm_lshift = -NORM_LSHIFT;
   nmag_epsilon = magnitude_epsilon;
 
-  num_xqueue = ROUNDUP((float)norm_len[X]/(float)voxel_section[X]);
+  /* num_xqueue = ROUNDUP((float)norm_len[X]/(float)voxel_section[X]);
   num_yqueue = ROUNDUP((float)norm_len[Y]/(float)voxel_section[Y]);
   num_zqueue = ROUNDUP((float)norm_len[Z]/(float)voxel_section[Z]);
   num_queue = num_xqueue * num_yqueue * num_zqueue;
@@ -128,20 +138,22 @@ void Normal_Compute()
   ystart = ((my_node / voxel_section[X]) % voxel_section[Y]) * num_yqueue;
   ystop = MIN(ystart+num_yqueue,norm_len[Y]);
   zstart = (my_node / (voxel_section[X] * voxel_section[Y])) * num_zqueue;
-  zstop = MIN(zstart+num_zqueue,norm_len[Z]);
+  zstop = MIN(zstart+num_zqueue,norm_len[Z]); */
 
-#ifdef SERIAL_PREPROC
+/* #ifdef SERIAL_PREPROC */
   zstart=0;
   zstop = norm_len[Z];
   ystart=0;
   ystop = norm_len[Y];
   xstart=0;
   xstop = norm_len[X];
-#endif
+/* #endif */
 
   for (outz=zstart; outz<zstop; outz++) {
     for (outy=ystart; outy<ystop; outy++) {
       for (outx=xstart; outx<xstop; outx++) {
+        #pragma omp task
+        {
 
 	inx = INSET + outx;
 	iny = INSET + outy;
@@ -169,13 +181,11 @@ void Normal_Compute()
 	else {
 	  *local_norm_address = TADDR(norm0,2,1);
 	}
+        }
       }
     }
   }
 
-#ifndef SERIAL_PREPROC
-  BARRIER(Global->SlaveBarrier,num_nodes);
-#endif
 }
 
 

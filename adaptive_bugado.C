@@ -40,7 +40,7 @@ long itest;
 #define START_RAY 1
 #define INTERPOLATED ((MAX_PIXEL + 1) / 32) /* This pixel interpolated   */
 
-EXTERN_ENV
+//EXTERN_ENV
 
 #include "anl.h"
 

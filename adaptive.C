@@ -40,11 +40,11 @@ long itest;
 #define START_RAY 1
 #define INTERPOLATED ((MAX_PIXEL + 1) / 32) /* This pixel interpolated   */
 
-EXTERN_ENV
+//EXTERN_ENV
 
 #include "anl.h"
 
-void Ray_Trace(long my_node)
+void Ray_Trace()
 {
   long i, j;
   long starttime, stoptime, exectime, exectime1;
@@ -96,7 +96,7 @@ void Ray_Trace(long my_node)
 /*   BARRIER(Global->TimeBarrier,num_nodes); */
     #pragma omp barrier
     CLOCK(starttime);
-    Pre_Shade(my_node);
+    Pre_Shade();
 
     /*   Espera threads acabarem
       LOCK(Global->CountLock);
@@ -105,7 +105,7 @@ void Ray_Trace(long my_node)
       while (Global->Counter); */
 
      // #pragma omp barrier
-    Ray_Trace_Adaptively(my_node);
+    Ray_Trace_Adaptively();
 
     #pragma omp barrier
     CLOCK(stoptime);
@@ -126,7 +126,7 @@ void Ray_Trace(long my_node)
 /* BARRIER(Global->TimeBarrier,num_nodes); */
 #pragma omp barrier
       CLOCK(starttime);
-      Interpolate_Recursively(my_node);
+      Interpolate_Recursively();
 
       CLOCK(stoptime);
 
@@ -142,14 +142,14 @@ void Ray_Trace(long my_node)
   #pragma omp barrier 
     CLOCK(starttime);
 
-    Pre_Shade(my_node);
+    Pre_Shade();
 
 /*   LOCK(Global->CountLock);
   Global->Counter--;
   UNLOCK(Global->CountLock);
   while (Global->Counter);*/
   //#pragma omp barrier 
-    Ray_Trace_Non_Adaptively(my_node);
+    Ray_Trace_Non_Adaptively();
 
     CLOCK(stoptime);
 
@@ -171,7 +171,7 @@ void Ray_Trace(long my_node)
 
 
 
-void Ray_Trace_Adaptively(long my_node)
+void Ray_Trace_Adaptively()
 {
   long outx, outy, yindex, xindex;
 
@@ -390,7 +390,7 @@ void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
   }
 }
 
-void Ray_Trace_Non_Adaptively(long my_node)
+void Ray_Trace_Non_Adaptively()
 {
   //#   pragma omp parallel num_threads(4) default(shared) 
 //{
@@ -510,7 +510,7 @@ void Ray_Trace_Non_Adaptively(long my_node)
   }
 }*/
 
-void Interpolate_Recursively(long my_node)
+void Interpolate_Recursively()
 {
   long i, outx, outy, xindex, yindex;
 

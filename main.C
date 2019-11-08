@@ -39,13 +39,12 @@
 #ifdef ENABLE_PARSEC_HOOKS
 #include <hooks.h>
 #endif
-MAIN_ENV
 
 #include "anl.h"
 
 int ROTATE_STEPS = 8;
 
-struct GlobalMemory *Global;
+//struct GlobalMemory *Global;
 
 long image_section[NI];
 long voxel_section[NM];
@@ -82,7 +81,6 @@ int main(int argc, char *argv[])
     exit(-1);
   }
 
-  MAIN_INITENV(, SH_MEM_AMT);
 
   num_nodes = atol(argv[1]);
   ROTATE_STEPS = atoi(argv[3]);
@@ -112,23 +110,24 @@ int main(int argc, char *argv[])
     }
   }
 
+  output_txt = YES;
   Frame();
 
-  /*  if (num_nodes > 1)
-    WAIT_FOR_END(num_nodes-1);*/
+   /* if (num_nodes > 1)
+    WAIT_FOR_END(num_nodes-1); */
 
   if (num_nodes > 1)
   {
-    WAIT_FOR_END(num_nodes);
+    /* //WAIT_FOR_END(num_nodes); */
 #ifdef ENABLE_PARSEC_HOOKS
     __parsec_roi_end();
 #endif
   }
 
-  MAIN_END;
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_bench_end();
 #endif
+  return(0);
 }
 
 void Frame()
@@ -149,7 +148,7 @@ void Frame()
   * Modificado
   **/
 
-  Global = (struct GlobalMemory *)NU_MALLOC(sizeof(struct GlobalMemory), 0);
+  // = (struct GlobalMemory *)NU_MALLOC(sizeof(struct GlobalMemory), 0);
   /* BARINIT(Global->SlaveBarrier, num_nodes);
    BARINIT(Global->TimeBarrier, num_nodes);
    LOCKINIT(Global->IndexLock);
@@ -285,7 +284,6 @@ void Render_Loop()
   char outfile[FILENAME_STRING_SIZE];
   //long image_partition, mask_image_partition;
   //float inv_num_nodes;
-  long my_node = omp_get_thread_num();
 //#pragma omp barrier
   /**
    * Modificado
@@ -380,7 +378,7 @@ void Render_Loop()
        Global->Queue[num_nodes][0] = num_nodes;
        Global->Queue[my_node][0] = 0;
  */
-    Render(my_node);
+    Render();
     char *outfile2[200] = {0};
 
         #pragma omp single

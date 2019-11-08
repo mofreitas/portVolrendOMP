@@ -28,7 +28,7 @@ extern long voxel_section[NM];
 extern PIXEL *image,*image_block,*mask_image_block;
 extern long num_nodes,frame;
 extern long block_xlen,block_ylen,num_blocks,num_xblocks,num_yblocks;
-extern struct GlobalMemory *Global;
+//extern struct GlobalMemory *Global;
 extern PIXEL *shd_address;
 extern BOOLEAN *sbit_address;
 extern long shd_length;
@@ -161,13 +161,13 @@ extern MPIXEL *mask_image_address;
                                 /* Pointer to image                          */
 
 /* adaptive.c */
-void Ray_Trace(long my_node);
-void Ray_Trace_Adaptively(long my_node);
+void Ray_Trace();
+void Ray_Trace_Adaptively();
 void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen);
-void Ray_Trace_Non_Adaptively(long my_node);
+void Ray_Trace_Non_Adaptively();
 //Não usado no programa
 //void Ray_Trace_Fast_Non_Adaptively(long my_node);
-void Interpolate_Recursively(long my_node);
+void Interpolate_Recursively();
 void Interpolate_Recursive_Box(long outx, long outy, long boxlen);
 
 /* file.c */
@@ -232,10 +232,10 @@ void Init_Parallelization(void);
 
 /* raytrace.c */
 void Trace_Ray(double foutx, double fouty, PIXEL *pixel_address);
-void Pre_Shade(long my_node);
+void Pre_Shade();
 
 /* render.c */
-void Render(long my_node);
+void Render();
 void Observer_Transform_Light_Vector(void);
 void Compute_Observer_Transformed_Highlight_Vector(void);
 

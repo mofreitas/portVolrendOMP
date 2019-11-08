@@ -26,16 +26,16 @@
 float obslight[NM];	        /*   observer transformed light vector       */
 float obshighlight[NM];		/*   observer transformed highlight vector   */
 
-EXTERN_ENV
+//EXTERN_ENV
 
-void Render(long my_node)           /* assumes direction is +Z */
+void Render()           /* assumes direction is +Z */
 {
   #pragma omp single
   {
   Observer_Transform_Light_Vector();
   Compute_Observer_Transformed_Highlight_Vector();
   }  
-  Ray_Trace(my_node);
+  Ray_Trace();
 }
 
 

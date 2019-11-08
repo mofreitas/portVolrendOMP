@@ -40,7 +40,6 @@ OPACITY *opc_address;	        /* Pointer to opacity map                    */
 
 /* End of layout of .opc file.                                               */
 
-EXTERN_ENV
 
 #include "anl.h"
 
@@ -59,13 +58,18 @@ void Compute_Opacity()
 
   printf("    Computing opacity map...\n");
 
-  Global->Index = NODE0;
-
 #ifndef SERIAL_PREPROC
-  for (i=1; i<num_nodes; i++) CREATE(Opacity_Compute)
+  #pragma omp parallel num_threads(num_nodes)
+  {
+    #pragma omp single
+    {
+    Opacity_Compute();
+    }
+    #pragma omp taskwait
+  }
+#else
+Opacity_Compute();
 #endif
-
-  Opacity_Compute();
 }
 
 
@@ -100,43 +104,27 @@ void Opacity_Compute()
   float magnitude;
   float opacity, grd_x,grd_y,grd_z;
   long zstart,zstop;
-  long num_xqueue,num_yqueue,num_zqueue,num_queue;
   long xstart,xstop,ystart,ystop;
-  long my_node;
-
-  LOCK(Global->IndexLock);
-  my_node = Global->Index++;
-  UNLOCK(Global->IndexLock);
-  my_node = my_node%num_nodes;
 
 /*  POSSIBLE ENHANCEMENT:  Here's where one might bind the process to a
     processor, if one wanted to.
 */
 
-  num_xqueue = ROUNDUP((float)opc_len[X]/(float)voxel_section[X]);
-  num_yqueue = ROUNDUP((float)opc_len[Y]/(float)voxel_section[Y]);
-  num_zqueue = ROUNDUP((float)opc_len[Z]/(float)voxel_section[Z]);
-  num_queue = num_xqueue * num_yqueue * num_zqueue;
-  xstart = (my_node % voxel_section[X]) * num_xqueue;
-  xstop = MIN(xstart+num_xqueue,opc_len[X]);
-  ystart = ((my_node / voxel_section[X]) % voxel_section[Y]) * num_yqueue;
-  ystop = MIN(ystart+num_yqueue,opc_len[Y]);
-  zstart = (my_node / (voxel_section[X] * voxel_section[Y])) * num_zqueue;
-  zstop = MIN(zstart+num_zqueue,opc_len[Z]);
 
-#ifdef SERIAL_PREPROC
   zstart = 0;
   zstop = opc_len[Z];
   ystart = 0;
   ystop = opc_len[Y];
   xstart = 0;
   xstop = opc_len[X];
-#endif
 
-  for (outz=zstart; outz<zstop; outz++) {
-    for (outy=ystart; outy<ystop; outy++) {
+
+  for (outz=zstart; outz<zstop; outz++) {    
+    for (outy=ystart; outy<ystop; outy++) {      
       for (outx=xstart; outx<xstop; outx++) {
-
+        #pragma omp task
+          {
+          
 	inx = INSET + outx;
 	iny = INSET + outy;
 	inz = INSET + outz;
@@ -165,12 +153,10 @@ void Opacity_Compute()
 	}
 	else
 	  OPC(outz,outy,outx) = MIN_OPC;
+          }
       }
     }
   }
-#ifndef SERIAL_PREPROC
-  BARRIER(Global->SlaveBarrier,num_nodes);
-#endif
 }
 
 
