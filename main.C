@@ -197,6 +197,7 @@ void Frame()
     num_xblocks = ROUNDUP((float)image_len[X] / (float)block_xlen);
     num_yblocks = ROUNDUP((float)image_len[Y] / (float)block_ylen);
     num_blocks = num_xblocks * num_yblocks;
+    image_block = image_address;
     Lallocate_Image(&image_block, block_xlen * block_ylen);
   }
 
@@ -232,8 +233,6 @@ void Frame()
       Lallocate_Image(&mask_image_block, block_xlen * block_ylen);
     printf("2.\n");
   }
-
-  printf("saiu-10\n");
 
 #ifndef RENDER_ONLY
   Deallocate_Map(&map_address);
@@ -286,8 +285,6 @@ void Render_Loop()
           mask_image_address[i] = NULL_PIXEL;
       }
 
-      printf("não pode ser aqui %i \n", omp_get_thread_num());
-
       #pragma omp single
       {
 #ifdef DIM
@@ -298,7 +295,7 @@ void Render_Loop()
       }
 
       Render();
-      char *outfile2[200] = {0};
+      char *outfile2[200];
 
       #pragma omp single
       {

@@ -94,7 +94,6 @@ void Ray_Trace()
 
     Ray_Trace_Adaptively();
 
-    
     #pragma omp barrier
     CLOCK(stoptime);
     mclock(stoptime, starttime, &exectime);
@@ -104,7 +103,6 @@ void Ray_Trace()
     /* display pixel size if it does not, recursively interpolate to     */
     /* fill in any missing samples down to lowest size for volume data.  */
 
-    printf("fim ray_trace_adptively\n");
     if (highest_sampling_boxlen > 1)
     {
       #pragma omp barrier
@@ -115,7 +113,6 @@ void Ray_Trace()
 
       #pragma omp barrier
       mclock(stoptime, starttime, &exectime1);
-      printf("fim interpolate_adptively\n");
     }
   }
   else
@@ -128,7 +125,7 @@ void Ray_Trace()
     Ray_Trace_Non_Adaptively();
 
     CLOCK(stoptime);
-    
+
     #pragma omp barrier
     mclock(stoptime, starttime, &exectime);
     exectime1 = 0;
@@ -138,9 +135,11 @@ void Ray_Trace()
 void Ray_Trace_Adaptively()
 {
   long outx, outy, yindex, xindex;
-  long lnum_xblocks, lnum_yblocks, lnum_blocks;
-  long xstart, xstop, ystart, ystop, work;
 
+  long num_xqueue, lnum_xblocks, lnum_yblocks, lnum_blocks;
+  long xstop, ystop, work;
+
+  //numero de tiles por superbloco
   lnum_xblocks = ROUNDUP((float)image_len[X] / (float)block_xlen);
   lnum_yblocks = ROUNDUP((float)image_len[Y] / (float)block_ylen);
   lnum_blocks = lnum_xblocks * lnum_yblocks;
@@ -148,40 +147,32 @@ void Ray_Trace_Adaptively()
   xstop = image_len[X];
   ystop = image_len[Y];
 
-  #pragma omp for schedule(dynamic, 8)
-  /* #pragma omp single
-  { */
-  for (work = 0; work < lnum_blocks; work++)
+  #pragma omp single
   {
-    
-    xindex = (work % lnum_xblocks) * block_xlen;
-    yindex = (work / lnum_xblocks) * block_ylen;
-    printf("xindex: %ld, yindex: %ld", xindex, yindex);
-    /*  #pragma omp taskgroup
-     {   */ 
-    for (outy = yindex; outy < yindex + block_ylen && outy < ystop;
-         outy += highest_sampling_boxlen)
+    #pragma omp task
     {
-      for (outx = xindex; outx < xindex + block_xlen && outx < xstop;
-           outx += highest_sampling_boxlen)
+      for (work = 0; work < lnum_blocks; work++)
       {
-       /*  #pragma omp task default(none) shared(highest_sampling_boxlen) firstprivate(outx, outy)
-    { */
-        printf("não dá mais0\n");
-        /* Trace rays within square box of highest sampling size     */
-        /* whose lower-left corner is current image space location.  */
-        Ray_Trace_Adaptive_Box(outx, outy, highest_sampling_boxlen);
 
-        printf("não dá mais1\n");
-    /* } */
+        xindex = (work % lnum_xblocks) * block_xlen;
+        yindex = (work / lnum_xblocks) * block_ylen;
+
+        for (outy = yindex; outy < yindex + block_ylen && outy < ystop;
+            outy += highest_sampling_boxlen)
+        {
+          
+          for (outx = xindex; outx < xindex + block_xlen && outx < xstop;
+              outx += highest_sampling_boxlen)
+          {
+            /* Trace rays within square box of highest sampling size     */
+            /* whose lower-left corner is current image space location.  */
+            Ray_Trace_Adaptive_Box(outx, outy, highest_sampling_boxlen);
+          }
+        }
       }
-    }      
-     /* } */
+    }
   }
-  /* } */
-
-  /* #pragma omp taskwait */
-  printf("cleber\n");
+  #pragma omp taskwait
 }
 
 void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
@@ -282,9 +273,6 @@ void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
   /* Use of geometry-only color difference suppressed in accordance    */
   /* with hybrid.trf as published in IEEE CG&A, March, 1990.           */
 
-
-   printf("fora %i, %ld, %ld\n", omp_get_thread_num(), max_volume_color - min_volume_color, boxlen);
-
   if (boxlen > lowest_volume_boxlen &&
       max_volume_color - min_volume_color >=
           volume_color_difference)
@@ -294,16 +282,10 @@ void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
     {
       for (j = 0; j < boxlen && outx + j < image_len[X]; j += half_boxlen)
       {
-        printf("já era para ter saido0\n");
-        /* #pragma omp task
-        { */
         Ray_Trace_Adaptive_Box(outx + j, outy + i, half_boxlen);
-        /* } */
-        printf("já era para ter saido1\n");
       }
     }
   }
-
 }
 
 void Ray_Trace_Non_Adaptively()
@@ -343,27 +325,33 @@ void Interpolate_Recursively()
 {
   long i, outx, outy, xindex, yindex;
 
-  #pragma omp for schedule(dynamic, 4)
-  for (i = 0; i < num_blocks; i+=num_nodes)
+  #pragma omp single
   {
-    yindex = ((omp_get_thread_num()+i) / num_xblocks) * block_ylen;
-    xindex = ((omp_get_thread_num()+i) % num_xblocks) * block_xlen;
-
-    for (outy = yindex; outy < yindex + block_ylen &&
-                        outy < image_len[Y];
-         outy += highest_sampling_boxlen)
+    #pragma omp task
     {
-      for (outx = xindex; outx < xindex + block_xlen &&
-                          outx < image_len[X];
-           outx += highest_sampling_boxlen)
+      for (i = 0; i < num_blocks; i += 1)
       {
+        yindex = (i / num_xblocks) * block_ylen;
+        xindex = (i % num_xblocks) * block_xlen;
 
-        /* Fill in image within square box of highest sampling size  */
-        /* whose lower-left corner is current image space location.  */
-        Interpolate_Recursive_Box(outx, outy, highest_sampling_boxlen);
+        for (outy = yindex; outy < yindex + block_ylen &&
+                            outy < image_len[Y];
+            outy += highest_sampling_boxlen)
+        {
+          for (outx = xindex; outx < xindex + block_xlen &&
+                              outx < image_len[X];
+              outx += highest_sampling_boxlen)
+          {
+
+            /* Fill in image within square box of highest sampling size  */
+            /* whose lower-left corner is current image space location.  */
+            Interpolate_Recursive_Box(outx, outy, highest_sampling_boxlen);
+          }
+        }
       }
     }
   }
+  #pragma omp taskwait
 }
 
 void Interpolate_Recursive_Box(long outx, long outy, long boxlen)
