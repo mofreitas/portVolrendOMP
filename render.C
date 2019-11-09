@@ -22,22 +22,19 @@
 
 #include "incl.h"
 
-				/* Derived values:                           */
-float obslight[NM];	        /*   observer transformed light vector       */
-float obshighlight[NM];		/*   observer transformed highlight vector   */
+/* Derived values:                           */
+float obslight[NM];     /*   observer transformed light vector       */
+float obshighlight[NM]; /*   observer transformed highlight vector   */
 
-//EXTERN_ENV
-
-void Render()           /* assumes direction is +Z */
+void Render() /* assumes direction is +Z */
 {
   #pragma omp single
   {
-  Observer_Transform_Light_Vector();
-  Compute_Observer_Transformed_Highlight_Vector();
-  }  
+    Observer_Transform_Light_Vector();
+    Compute_Observer_Transformed_Highlight_Vector();
+  }
   Ray_Trace();
 }
-
 
 void Observer_Transform_Light_Vector()
 {
@@ -51,25 +48,24 @@ void Observer_Transform_Light_Vector()
   /* of colors is repeated on each frame of sequence, and same         */
   /* scaling and rotation is used during shading and ray tracing,      */
   /* light source will appear fixed relative to observer.              */
-  Transform_Point(light[X],light[Y],light[Z],
-		  &obslight[X],&obslight[Y],&obslight[Z]);
+  Transform_Point(light[X], light[Y], light[Z],
+                  &obslight[X], &obslight[Y], &obslight[Z]);
 
   /* Normalize transformed light vector                                */
-  inv_magnitude = 1.0/sqrt(obslight[X]*obslight[X] +
-		   obslight[Y]*obslight[Y] +
-		   obslight[Z]*obslight[Z]);
+  inv_magnitude = 1.0 / sqrt(obslight[X] * obslight[X] +
+                             obslight[Y] * obslight[Y] +
+                             obslight[Z] * obslight[Z]);
   obslight[X] = obslight[X] * inv_magnitude;
   obslight[Y] = obslight[Y] * inv_magnitude;
   obslight[Z] = obslight[Z] * inv_magnitude;
 }
 
-
 void Compute_Observer_Transformed_Highlight_Vector()
 {
   float inv_magnitude;
-  float obseye[NM];		/*   observer transformed eye vector         */
-  float brightness=1.0;
-  float eye[NM];		/* normalized vector from object to eye      */
+  float obseye[NM]; /*   observer transformed eye vector         */
+  float brightness = 1.0;
+  float eye[NM]; /* normalized vector from object to eye      */
 
   /* Transform eye vector by inverse of viewing matrix                 */
   /* to move shading observer with ray tracing observer.               */
@@ -78,12 +74,12 @@ void Compute_Observer_Transformed_Highlight_Vector()
   eye[X] = 0.0;
   eye[Y] = 0.0;
   eye[Z] = -1.0;
-  Transform_Point(eye[X],eye[Y],eye[Z],&obseye[X],&obseye[Y],&obseye[Z]);
+  Transform_Point(eye[X], eye[Y], eye[Z], &obseye[X], &obseye[Y], &obseye[Z]);
 
   /* Normalize transformed eye vector                                  */
-  inv_magnitude = 1.0/sqrt(obseye[X]*obseye[X] +
-		   obseye[Y]*obseye[Y] +
-		   obseye[Z]*obseye[Z]);
+  inv_magnitude = 1.0 / sqrt(obseye[X] * obseye[X] +
+                             obseye[Y] * obseye[Y] +
+                             obseye[Z] * obseye[Z]);
   obseye[X] = obseye[X] * inv_magnitude;
   obseye[Y] = obseye[Y] * inv_magnitude;
   obseye[Z] = obseye[Z] * inv_magnitude;
@@ -96,9 +92,9 @@ void Compute_Observer_Transformed_Highlight_Vector()
   obshighlight[Z] = obslight[Z] + obseye[Z];
 
   /* Normalize transformed highlight vector                            */
-  inv_magnitude = 1.0/sqrt(obshighlight[X]*obshighlight[X] +
-		   obshighlight[Y]*obshighlight[Y] +
-		   obshighlight[Z]*obshighlight[Z]);
+  inv_magnitude = 1.0 / sqrt(obshighlight[X] * obshighlight[X] +
+                             obshighlight[Y] * obshighlight[Y] +
+                             obshighlight[Z] * obshighlight[Z]);
   obshighlight[X] = obshighlight[X] * inv_magnitude * brightness;
   obshighlight[Y] = obshighlight[Y] * inv_magnitude * brightness;
   obshighlight[Z] = obshighlight[Z] * inv_magnitude * brightness;

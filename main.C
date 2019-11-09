@@ -40,11 +40,7 @@
 #include <hooks.h>
 #endif
 
-#include "anl.h"
-
 int ROTATE_STEPS = 8;
-
-//struct GlobalMemory *Global;
 
 long image_section[NI];
 long voxel_section[NM];
@@ -81,44 +77,44 @@ int main(int argc, char *argv[])
     exit(-1);
   }
 
-
   num_nodes = atol(argv[1]);
   ROTATE_STEPS = atoi(argv[3]);
 
   strcpy(filename, argv[2]);
 
-  if (argc == 5) {
-    if (strncmp(argv[4],"-a",strlen("-a")) == 0)
+  if (argc == 5)
+  {
+    if (strncmp(argv[4], "-a", strlen("-a")) == 0)
       adaptive = YES;
-    else if (strncmp(argv[4],"-o",strlen("-o")) == 0){
+    else if (strncmp(argv[4], "-o", strlen("-o")) == 0)
+    {
       output_txt = YES;
     }
-    else {
+    else
+    {
       printf("usage:  VOLREND num_processes input_file ROTATE_STEPS [-a] [-o] \n");
       exit(-1);
     }
   }
 
-  if (argc == 6) {
-    if (strncmp(argv[4],"-a",strlen("-a")) == 0 && strncmp(argv[5],"-o",strlen("-o")) == 0){
+  if (argc == 6)
+  {
+    if (strncmp(argv[4], "-a", strlen("-a")) == 0 && strncmp(argv[5], "-o", strlen("-o")) == 0)
+    {
       adaptive = YES;
       output_txt = YES;
     }
-    else {
+    else
+    {
       printf("usage:  VOLREND num_processes input_file ROTATE_STEPS [-a] [-o] \n");
       exit(-1);
     }
   }
 
-  output_txt = YES;
   Frame();
-
-   /* if (num_nodes > 1)
-    WAIT_FOR_END(num_nodes-1); */
 
   if (num_nodes > 1)
   {
-    /* //WAIT_FOR_END(num_nodes); */
 #ifdef ENABLE_PARSEC_HOOKS
     __parsec_roi_end();
 #endif
@@ -127,7 +123,7 @@ int main(int argc, char *argv[])
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_bench_end();
 #endif
-  return(0);
+  return (0);
 }
 
 void Frame()
@@ -143,17 +139,6 @@ void Frame()
 
   printf("*****Exited init_decomposition with num_nodes = %ld\n", num_nodes);
   fflush(stdout);
-
-  /**
-  * Modificado
-  **/
-
-  // = (struct GlobalMemory *)NU_MALLOC(sizeof(struct GlobalMemory), 0);
-  /* BARINIT(Global->SlaveBarrier, num_nodes);
-   BARINIT(Global->TimeBarrier, num_nodes);
-   LOCKINIT(Global->IndexLock);
-   LOCKINIT(Global->CountLock);
-   ALOCKINIT(Global->QLock,MAX_NUMPROC+1); */
 
   /* load dataset from file to each node */
 #ifndef RENDER_ONLY
@@ -198,9 +183,8 @@ void Frame()
   image_len[Y] = frust_len;
   image_length = image_len[X] * image_len[Y];
   Allocate_Image(&image_address, image_length);
-  num_nodes = 4;
-    if (num_nodes == 1)
-   { 
+  if (num_nodes == 1)
+  {
     block_xlen = image_len[X];
     block_ylen = image_len[Y];
     num_blocks = 1;
@@ -249,14 +233,12 @@ void Frame()
     printf("2.\n");
   }
 
+  printf("saiu-10\n");
+
 #ifndef RENDER_ONLY
   Deallocate_Map(&map_address);
 #endif
 
-  /**
-   * Modificado
-  **/
- /*  Global->Index = NODE0; */
 
   printf("\nRendering...\n");
   /*  printf("node\tframe\ttime\titime\trays\thrays\tsamples trilirped\n");
@@ -265,15 +247,10 @@ void Frame()
   __parsec_roi_begin();
 #endif
 
-  /**
-   * Modificado
-  **/
- /*   CREATE(Render_Loop, num_nodes);
-   #pragma omp parallel */
-   #pragma omp parallel num_threads(num_nodes)
-   {
-      Render_Loop();
-   }
+  #pragma omp parallel num_threads(num_nodes)
+  {
+    Render_Loop();
+  }
 }
 
 void Render_Loop()
@@ -282,27 +259,6 @@ void Render_Loop()
   PIXEL *local_image_address;
   MPIXEL *local_mask_image_address;
   char outfile[FILENAME_STRING_SIZE];
-  //long image_partition, mask_image_partition;
-  //float inv_num_nodes;
-//#pragma omp barrier
-  /**
-   * Modificado
-  **/
- /*   LOCK(Global->IndexLock);
-   my_node = Global->Index++;
-   UNLOCK(Global->IndexLock);
-   my_node = my_node%num_nodes;
-   my_node = omp_get_thread_num();
-
-   BARINCLUDE(Global->TimeBarrier);
-   BARINCLUDE(Global->SlaveBarrier); */
-
-  /*  POSSIBLE ENHANCEMENT:  Here's where one might bind the process to a
-    processor, if one wanted to.
-*/
-  //inv_num_nodes = 1.0 / (float)num_nodes;
-  //image_partition = ROUNDUP(image_length * inv_num_nodes);
-  //mask_image_partition = ROUNDUP(mask_image_length * inv_num_nodes);
 
 #ifdef DIM
   int dim;
@@ -318,81 +274,44 @@ void Render_Loop()
 */
 
       frame = step;
-      /* initialize images here */
-      //local_image_address = image_address + image_partition * my_node;
-      //local_mask_image_address = mask_image_address + mask_image_partition * my_node;
-      //loop começa sincronizado
-//#pragma omp barrier
-     /*   BARRIER(Global->SlaveBarrier,num_nodes);*/
-       
 
-       //my_node = omp_get_thread_num();
-        /*if (my_node == num_nodes - 1)
-       { 
-         #pragma omp for schedule(static, 4)
-        for (i = image_partition * my_node; i < image_length; i++){
-          *local_image_address++ = background;
-        }
-        if (adaptive){
-          #pragma omp for schedule(static, 4)
-          for (i = mask_image_partition * my_node; i < mask_image_length; i++)
-            *local_mask_image_address++ = NULL_PIXEL;
-            }
-       } 
-       else
-      { 
+      #pragma omp for schedule(static, 4)
+      for (i = 0; i < image_length; i++)
+        image_address[i] = background;
+
+      if (adaptive)
+      {
         #pragma omp for schedule(static, 4)
-        for (i = 0; i < image_partition; i++)
-          *local_image_address++ = background;
-        if (adaptive){
-          #pragma omp for schedule(static, 4)
-          for (i = 0; i < mask_image_partition; i++)
-            *local_mask_image_address++ = NULL_PIXEL;
-        }
-      } */
+        for (i = 0; i < mask_image_length; i++)
+          mask_image_address[i] = NULL_PIXEL;
+      }
 
-        #pragma omp for schedule(static, 4)
-        for (i = 0; i < image_length; i++)
-          image_address[i] = background;
+      printf("não pode ser aqui %i \n", omp_get_thread_num());
 
-        if (adaptive){
-          #pragma omp for schedule(static, 4)
-          for (i = 0; i < mask_image_length; i++)
-            mask_image_address[i] = NULL_PIXEL;
-        }
-
-      /* } */
-
-       #pragma omp single
-  { 
+      #pragma omp single
+      {
 #ifdef DIM
         Select_View((float)STEP_SIZE, dim);
 #else
-      Select_View((float)STEP_SIZE, Y);
+        Select_View((float)STEP_SIZE, Y);
 #endif
-     }
+      }
 
-      /* BARRIER(Global->SlaveBarrier,num_nodes);
-       #pragma omp barrier
-       Global->Counter = num_nodes;
-       Global->Queue[num_nodes][0] = num_nodes;
-       Global->Queue[my_node][0] = 0;
- */
-    Render();
-    char *outfile2[200] = {0};
+      Render();
+      char *outfile2[200] = {0};
 
-        #pragma omp single
-        { 
-                if (ROTATE_STEPS > 1)
-                {
-        #ifdef DIM
-                  sprintf(outfile, "%s_%ld", filename, 1000 + dim * ROTATE_STEPS + step);
-                  sprintf(outfile2, "%s_%ld.txt", "saida_", 1000 + dim * ROTATE_STEPS + step);
-        #else
-                sprintf(outfile, "%s_%ld.tiff", filename, 1000 + step);
-                sprintf(outfile2, "%s_%ld.txt", "saida_", 1000 + step);
-        #endif
-                  /*	  Store_Image(outfile);
+      #pragma omp single
+      {
+        if (ROTATE_STEPS > 1)
+        {
+#ifdef DIM
+          sprintf(outfile, "%s_%ld", filename, 1000 + dim * ROTATE_STEPS + step);
+          sprintf(outfile2, "%s_%ld.txt", "saida_", 1000 + dim * ROTATE_STEPS + step);
+#else
+          sprintf(outfile, "%s_%ld.tiff", filename, 1000 + step);
+          sprintf(outfile2, "%s_%ld.txt", "saida_", 1000 + step);
+#endif
+          /*	  Store_Image(outfile);
                   p = image_address;
                   for (zz = 0;zz < image_length;zz++) {
                     tiff_image[zz] = (long) ((*p)*256*256*256 + (*p)*256*256 +
@@ -400,11 +319,11 @@ void Render_Loop()
 	            p++;
                   }
         tiff_save_rgba(outfile,tiff_image,image_len[X],image_len[Y]);  */
-                  WriteGrayscaleTIFF(outfile, outfile2, image_len[X], image_len[Y], image_len[X], image_address);
-                }
-                else
-                {
-                  /*	  Store_Image(filename);
+          WriteGrayscaleTIFF(outfile, outfile2, image_len[X], image_len[Y], image_len[X], image_address);
+        }
+        else
+        {
+          /*	  Store_Image(filename);
 	          p = image_address;
                   for (zz = 0;zz < image_length;zz++) {
                     tiff_image[zz] = (long) ((*p)*256*256*256 + (*p)*256*256 +
@@ -412,11 +331,10 @@ void Render_Loop()
 	            p++;
                   }
         tiff_save_rgba(filename,tiff_image,image_len[X],image_len[Y]);    */
-                  strcat(filename, ".tiff");
-                  WriteGrayscaleTIFF(filename, "foi",  image_len[X], image_len[Y], image_len[X], image_address);
-                }
-            
-        } 
+          strcat(filename, ".tiff");
+          WriteGrayscaleTIFF(filename, "foi", image_len[X], image_len[Y], image_len[X], image_address);
+        }
+      }
     }
 #ifdef DIM
   }
@@ -618,26 +536,31 @@ long WriteGrayscaleTIFF(char *filename, char *filename_txt, long width, long hei
   for (c = 0; c < 256; c++)
     cmap[c] = (long)(c * factor);
 
-  if(output_txt){
-   FILE* saida;
-	    saida = fopen(filename_txt, "w");
-	    long i;
-	    if(saida!=NULL){
-	        for(i=0;i<width*height;i++){
-		        if(i%width == 0){
-			        fprintf(saida,"\n");
-		        }
-		        fprintf(saida,"%d|", data[i]);
-	        }
+  if (output_txt)
+  {
+    FILE *saida;
+    saida = fopen(filename_txt, "w");
+    long i;
+    if (saida != NULL)
+    {
+      for (i = 0; i < width * height; i++)
+      {
+        if (i % width == 0)
+        {
+          fprintf(saida, "\n");
+        }
+        fprintf(saida, "%d|", data[i]);
+      }
 
-            fprintf(saida,"\n");
-	    }
-	    else{
-	        printf("Erro ao gerar %s \n", filename_txt);
-	    }  
-      
-	        fclose(saida);
-  }  
+      fprintf(saida, "\n");
+    }
+    else
+    {
+      printf("Erro ao gerar %s \n", filename_txt);
+    }
+
+    fclose(saida);
+  }
 
   /* open and initialize output file */
   if ((outimage = TIFFOpen(filename, "w")) == NULL)

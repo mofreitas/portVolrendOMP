@@ -76,9 +76,6 @@ long pyr_lowest_level;  		/*   lowest level of pyramid to look at      */
 				/*     (>= 0)                                */
 float angle[NM];                /* initial viewing angle                     */
 
-
-//EXTERN_ENV
-
 void Init_Options()
 {
 

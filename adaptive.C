@@ -40,10 +40,6 @@ long itest;
 #define START_RAY 1
 #define INTERPOLATED ((MAX_PIXEL + 1) / 32) /* This pixel interpolated   */
 
-//EXTERN_ENV
-
-#include "anl.h"
-
 void Ray_Trace()
 {
   long i, j;
@@ -91,28 +87,16 @@ void Ray_Trace()
   /* Invoke adaptive or non-adaptive ray tracer                          */
   if (adaptive)
   {
-    
 
-/*   BARRIER(Global->TimeBarrier,num_nodes); */
     #pragma omp barrier
     CLOCK(starttime);
     Pre_Shade();
 
-    /*   Espera threads acabarem
-      LOCK(Global->CountLock);
-      Global->Counter--;
-      UNLOCK(Global->CountLock);
-      while (Global->Counter); */
-
-     // #pragma omp barrier
     Ray_Trace_Adaptively();
 
+    
     #pragma omp barrier
     CLOCK(stoptime);
-    
-
- /*  BARRIER(Global->TimeBarrier,num_nodes); */
-
     mclock(stoptime, starttime, &exectime);
 
     /* If adaptively ray tracing and highest sampling size is greater    */
@@ -120,168 +104,90 @@ void Ray_Trace()
     /* display pixel size if it does not, recursively interpolate to     */
     /* fill in any missing samples down to lowest size for volume data.  */
 
+    printf("fim ray_trace_adptively\n");
     if (highest_sampling_boxlen > 1)
     {
-
-/* BARRIER(Global->TimeBarrier,num_nodes); */
-#pragma omp barrier
+      #pragma omp barrier
       CLOCK(starttime);
       Interpolate_Recursively();
 
       CLOCK(stoptime);
 
-/* BARRIER(Global->TimeBarrier,num_nodes); */
-#pragma omp barrier 
+      #pragma omp barrier
       mclock(stoptime, starttime, &exectime1);
+      printf("fim interpolate_adptively\n");
     }
   }
   else
   {
-
-/*   BARRIER(Global->TimeBarrier,num_nodes);*/
-  #pragma omp barrier 
+    #pragma omp barrier
     CLOCK(starttime);
 
     Pre_Shade();
 
-/*   LOCK(Global->CountLock);
-  Global->Counter--;
-  UNLOCK(Global->CountLock);
-  while (Global->Counter);*/
-  //#pragma omp barrier 
     Ray_Trace_Non_Adaptively();
 
     CLOCK(stoptime);
-
-/*   BARRIER(Global->TimeBarrier,num_nodes);*/
-  #pragma omp barrier 
+    
+    #pragma omp barrier
     mclock(stoptime, starttime, &exectime);
     exectime1 = 0;
   }
-
-  /*   LOCK(Global->CountLock); */
-  /*printf("%3ld\t%3ld\t%6ld\t%6ld\t%6ld\t%6ld\t%8ld\n",my_node,frame,exectime,
-	   exectime1,num_rays_traced,num_traced_rays_hit_volume,
-	   num_samples_trilirped);*/
-
- /*    UNLOCK(Global->CountLock); */
-/*   #pragma omp barrier */
-/*     BARRIER(Global->TimeBarrier, num_nodes); */
 }
-
-
 
 void Ray_Trace_Adaptively()
 {
   long outx, outy, yindex, xindex;
+  long lnum_xblocks, lnum_yblocks, lnum_blocks;
+  long xstart, xstop, ystart, ystop, work;
 
-  long num_xqueue, num_yqueue, num_queue, lnum_xblocks, lnum_yblocks, lnum_blocks;
-  long xstart, xstop, ystart, ystop, local_node, work;
-
-  itest = 0;
-
-  /*   image_len[eixo] - numero de pixels da imagem dado um eixo
-    image_section[eixo] - numero de seçõs em que a imagem em dado eixo
-    é dividida
-    num_queue - numero de pixels de cada "superbloco"
-    Global->Queue[num_nodes][0] - indica quantas threads ainda estão processando dados */
-
-  /* Calcula numero de pixels de cada "super bloco" ou região dado o numero */
-  /* de seções que a imagem tem (definido basedo no número de threads) */
-  num_xqueue = ROUNDUP((float)image_len[X]/*  / (float)image_section[X] */);
-  num_yqueue = ROUNDUP((float)image_len[Y] /* / (float)image_section[Y] */);
-  num_queue = num_xqueue * num_yqueue;
-
-  /* Calcula números de tiles para cada superbloco
-  lnum_xblocks = ROUNDUP((float)num_xqueue / (float)block_xlen);
-  lnum_yblocks = ROUNDUP((float)num_yqueue / (float)block_ylen);
-  lnum_blocks = lnum_xblocks * lnum_yblocks;
- */
   lnum_xblocks = ROUNDUP((float)image_len[X] / (float)block_xlen);
   lnum_yblocks = ROUNDUP((float)image_len[Y] / (float)block_ylen);
   lnum_blocks = lnum_xblocks * lnum_yblocks;
 
-/*     Define thread que estará executando codigo a seguinr
-    local_node = my_node;
+  xstop = image_len[X];
+  ystop = image_len[Y];
 
-    Serve para indicar em qual tile a thread "localnode" está trabalhando
-    Global->Queue[local_node][0] = 0;
-
-    Executa enquanto ainda há threads com dados para serem processados
-    while (Global->Queue[num_nodes][0] > 0)
-    {
-      Define pixels de começo e fim de cada ""superbloco""
-    xstart = (local_node % image_section[X]) * num_xqueue;
-    xstart = ROUNDUP((float)xstart / (float)highest_sampling_boxlen);
-    xstart = xstart * highest_sampling_boxlen;
-    xstop = MIN(xstart + num_xqueue, image_len[X]);
-    ystart = (local_node / image_section[X]) * num_yqueue;
-    ystart = ROUNDUP((float)ystart / (float)highest_sampling_boxlen);
-    ystart = ystart * highest_sampling_boxlen;
-    ystop = MIN(ystart + num_yqueue, image_len[Y]);
-
-      Caso um superbloco esteja sendo processado por duas thread diferentes,
-      Esse mutex garante que cada uma irá trabalhar em um tile (work) diferente
-      ALOCK(Global->QLock, local_node);
-      work = Global->Queue[local_node][0];
-      Global->Queue[local_node][0] += 1;
-      AULOCK(Global->QLock, local_node);
+  #pragma omp for schedule(dynamic, 8)
+  /* #pragma omp single
+  { */
+  for (work = 0; work < lnum_blocks; work++)
+  {
     
-      Executa enquanto o número de tiles trabalhadas for menor
-      que o número de tiles do superbloco (percorre superbloco tile a tile) */
-    xstop = image_len[X];
-    ystop = image_len[Y];
-    #pragma omp for schedule(dynamic, 8)
-    for(work = 0; work < lnum_blocks; work++)
+    xindex = (work % lnum_xblocks) * block_xlen;
+    yindex = (work / lnum_xblocks) * block_ylen;
+    printf("xindex: %ld, yindex: %ld", xindex, yindex);
+    /*  #pragma omp taskgroup
+     {   */ 
+    for (outy = yindex; outy < yindex + block_ylen && outy < ystop;
+         outy += highest_sampling_boxlen)
     {
-    /*   while (work < lnum_blocks)
+      for (outx = xindex; outx < xindex + block_xlen && outx < xstop;
+           outx += highest_sampling_boxlen)
       {
-        Percorre tile com passos de highest_sampling_boxlen */
-      xindex = (work % lnum_xblocks) * block_xlen;
-      yindex = (work / lnum_xblocks) * block_ylen;
-      for (outy = yindex; outy < yindex + block_ylen && outy < ystop;
-           outy += highest_sampling_boxlen)
-      {
-        for (outx = xindex; outx < xindex + block_xlen && outx < xstop;
-             outx += highest_sampling_boxlen)
-        {
+       /*  #pragma omp task default(none) shared(highest_sampling_boxlen) firstprivate(outx, outy)
+    { */
+        printf("não dá mais0\n");
+        /* Trace rays within square box of highest sampling size     */
+        /* whose lower-left corner is current image space location.  */
+        Ray_Trace_Adaptive_Box(outx, outy, highest_sampling_boxlen);
 
-          /* Trace rays within square box of highest sampling size     */
-          /* whose lower-left corner is current image space location.  */
-          Ray_Trace_Adaptive_Box(outx, outy, highest_sampling_boxlen);
-        }
+        printf("não dá mais1\n");
+    /* } */
       }
-      /*   Equivalente ao work++
-        Quando um superbloco está sendo processado por duas threads, 
-        o work é compartilhado entre as duas
-        ALOCK(Global->QLock, local_node);
-        work = Global->Queue[local_node][0];
-        Global->Queue[local_node][0] += 1;
-        AULOCK(Global->QLock, local_node); */
-    }
-   /*    Se a thread terminou seu "superbloco", remove um da lista de "superblocos"
-      faltantes
-      if (my_node == local_node)
-      {
-        ALOCK(Global->QLock, num_nodes);
-        Global->Queue[num_nodes][0]--;
-        AULOCK(Global->QLock, num_nodes);
-      }
-      desloca a thread ciclicamente, de forma que se a thread 0 acabou, vai para a thread 1
-      local_node = (local_node + 1) % num_nodes;
+    }      
+     /* } */
+  }
+  /* } */
 
-      Procura por uma thread (local_node) que não acabou suas tiles, 
-      perconrrendo-as ciclicamente
-      while (Global->Queue[local_node][0] >= lnum_blocks &&
-             Global->Queue[num_nodes][0] > 0)
-        local_node = (local_node + 1) % num_nodes;
-    } */
+  /* #pragma omp taskwait */
+  printf("cleber\n");
 }
 
 void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
 {
   long i, j;
-  long half_boxlen;
+  long half_boxlen = boxlen >> 1;
   long min_volume_color, max_volume_color;
   float foutx, fouty;
   volatile long imask;
@@ -375,6 +281,10 @@ void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
   /* being careful not to exceed the boundaries of the output image.   */
   /* Use of geometry-only color difference suppressed in accordance    */
   /* with hybrid.trf as published in IEEE CG&A, March, 1990.           */
+
+
+   printf("fora %i, %ld, %ld\n", omp_get_thread_num(), max_volume_color - min_volume_color, boxlen);
+
   if (boxlen > lowest_volume_boxlen &&
       max_volume_color - min_volume_color >=
           volume_color_difference)
@@ -384,141 +294,60 @@ void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
     {
       for (j = 0; j < boxlen && outx + j < image_len[X]; j += half_boxlen)
       {
+        printf("já era para ter saido0\n");
+        /* #pragma omp task
+        { */
         Ray_Trace_Adaptive_Box(outx + j, outy + i, half_boxlen);
+        /* } */
+        printf("já era para ter saido1\n");
       }
     }
   }
+
 }
 
 void Ray_Trace_Non_Adaptively()
 {
-  //#   pragma omp parallel num_threads(4) default(shared) 
-//{
   PIXEL *pixel_address;
 
-  long num_xqueue, num_yqueue, num_queue, lnum_xblocks, lnum_yblocks, lnum_blocks;
-  long xstart, xstop, ystart, ystop, local_node, work;
+  long lnum_xblocks, lnum_yblocks, lnum_blocks, work;
+  float foutx, fouty;
+  long outx, outy, xindex, yindex;
 
-    /* Calcula numero de pixels de cada "super bloco" ou região dado o numero */
-  /* de seções que a imagem tem (definido basedo no número de threads) */
-  num_xqueue = ROUNDUP((float)image_len[X]);
-  num_yqueue = ROUNDUP((float)image_len[Y]);
-  num_queue = num_xqueue * num_yqueue;
-
-  /* Calcula números de tiles para cada superbloco
-  lnum_xblocks = ROUNDUP((float)num_xqueue / (float)block_xlen);
-  lnum_yblocks = ROUNDUP((float)num_yqueue / (float)block_ylen);
-  lnum_blocks = lnum_xblocks * lnum_yblocks;
- */
   lnum_xblocks = ROUNDUP((float)image_len[X] / (float)block_xlen);
   lnum_yblocks = ROUNDUP((float)image_len[Y] / (float)block_ylen);
   lnum_blocks = lnum_xblocks * lnum_yblocks;
-  
- /*  local_node = my_node;
-    Global->Queue[local_node][0] = 0; */
-  /* while (Global->Queue[num_nodes][0] > 0)
-  { */
-    /* xstart = (local_node % image_section[X]) * num_xqueue;
-    xstop = MIN(xstart + num_xqueue, image_len[X]);
-    ystart = (local_node / image_section[X]) * num_yqueue;
-    ystop = MIN(ystart + num_yqueue, image_len[Y]);
-    ALOCK(Global->QLock, local_node);
-    work = Global->Queue[local_node][0]++;
-    AULOCK(Global->QLock, local_node); */
-    xstop = image_len[X];
-    ystop = image_len[Y];
-    int i = 0;
 
-    
-      float foutx, fouty;
-      long outx, outy, xindex, yindex;
-
-    /* printf("%i, ", omp_get_num_threads()); */
-    #pragma omp for schedule(dynamic, 8)
-    for(work = 0; work < lnum_blocks; work++)
-    {
-
-   /*  while (work < lnum_blocks)
-    { */
-      xindex = (work % lnum_xblocks) * block_xlen;
-      yindex = (work / lnum_xblocks) * block_ylen;
-      for (outy = yindex; outy < yindex + block_ylen && outy < ystop; outy++)
-      {
-        for (outx = xindex; outx < xindex + block_xlen && outx < xstop; outx++)
-        {
-
-          /* Trace ray from specified image space location into map.   */
-          /* Stochastic sampling is as described in adaptive code.     */
-          foutx = (float)(outx);
-          fouty = (float)(outy);
-          pixel_address = IMAGE_ADDRESS(outy, outx);
-          Trace_Ray(foutx, fouty, pixel_address);
-        }
-      }
-      /* ALOCK(Global->QLock, local_node);
-      work = Global->Queue[local_node][0]++;
-      AULOCK(Global->QLock, local_node); */
-    }
-//}
-/* printf("fim bloco \n"); */
-
-    /* }
-    if (my_node == local_node)
-    {
-      ALOCK(Global->QLock, num_nodes);
-      Global->Queue[num_nodes][0]--;
-      AULOCK(Global->QLock, num_nodes);
-    }
-    local_node = (local_node + 1) % num_nodes;
-    while (Global->Queue[local_node][0] >= lnum_blocks &&
-           Global->Queue[num_nodes][0] > 0)
-      local_node = (local_node + 1) % num_nodes; */
-  /* } */
-}
-
-//Não usado no programa
-/*void Ray_Trace_Fast_Non_Adaptively(long my_node)
-{
-  long i, outx, outy, xindex, yindex;
-  float foutx, fouty;
-  PIXEL *pixel_address;
-
-  for (i = 0; i < num_blocks; i += num_nodes)
+  #pragma omp for schedule(dynamic, 8)
+  for (work = 0; work < lnum_blocks; work++)
   {
-    yindex = ((my_node + i) / num_xblocks) * block_ylen;
-    xindex = ((my_node + i) % num_xblocks) * block_xlen;
-
-    for (outy = yindex; outy < yindex + block_ylen &&
-                        outy < image_len[Y];
-         outy += lowest_volume_boxlen)
+    xindex = (work % lnum_xblocks) * block_xlen;
+    yindex = (work / lnum_xblocks) * block_ylen;
+    for (outy = yindex; outy < yindex + block_ylen && outy < image_len[X]; outy++)
     {
-      for (outx = xindex; outx < xindex + block_xlen &&
-                          outx < image_len[X];
-           outx += lowest_volume_boxlen)
+      for (outx = xindex; outx < xindex + block_xlen && outx < image_len[Y]; outx++)
       {
 
-        // Trace ray from specified image space location into map.   
-        // Stochastic sampling is as described in adaptive code.     
-        MASK_IMAGE(outy, outx) += RAY_TRACED;
+        /* Trace ray from specified image space location into map.   */
+        /* Stochastic sampling is as described in adaptive code.     */
         foutx = (float)(outx);
         fouty = (float)(outy);
         pixel_address = IMAGE_ADDRESS(outy, outx);
         Trace_Ray(foutx, fouty, pixel_address);
-        num_rays_traced++;
       }
     }
   }
-}*/
+}
 
 void Interpolate_Recursively()
 {
   long i, outx, outy, xindex, yindex;
 
   #pragma omp for schedule(dynamic, 4)
-  for (i = 0; i < num_blocks; i++)
+  for (i = 0; i < num_blocks; i+=num_nodes)
   {
-    yindex = (i / num_xblocks) * block_ylen;
-    xindex = (i % num_xblocks) * block_xlen;
+    yindex = ((omp_get_thread_num()+i) / num_xblocks) * block_ylen;
+    xindex = ((omp_get_thread_num()+i) % num_xblocks) * block_xlen;
 
     for (outy = yindex; outy < yindex + block_ylen &&
                         outy < image_len[Y];

@@ -28,7 +28,6 @@ extern long voxel_section[NM];
 extern PIXEL *image,*image_block,*mask_image_block;
 extern long num_nodes,frame;
 extern long block_xlen,block_ylen,num_blocks,num_xblocks,num_yblocks;
-//extern struct GlobalMemory *Global;
 extern PIXEL *shd_address;
 extern BOOLEAN *sbit_address;
 extern long shd_length;
