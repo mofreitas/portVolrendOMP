@@ -327,9 +327,10 @@ void Interpolate_Recursively()
 
   #pragma omp single
   {
-    #pragma omp task
+    
+    for (i = 0; i < num_blocks; i += 1)
     {
-      for (i = 0; i < num_blocks; i += 1)
+      #pragma omp task
       {
         yindex = (i / num_xblocks) * block_ylen;
         xindex = (i % num_xblocks) * block_xlen;
