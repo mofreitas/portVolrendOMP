@@ -148,10 +148,10 @@ void Ray_Trace_Adaptively()
   ystop = image_len[Y];
 
   #pragma omp single
-  {
-    #pragma omp task
-    {
-      for (work = 0; work < lnum_blocks; work++)
+  {    
+    for (work = 0; work < lnum_blocks; work++)
+    {    
+      #pragma omp task
       {
 
         xindex = (work % lnum_xblocks) * block_xlen;
@@ -160,7 +160,7 @@ void Ray_Trace_Adaptively()
         for (outy = yindex; outy < yindex + block_ylen && outy < ystop;
             outy += highest_sampling_boxlen)
         {
-          
+              
           for (outx = xindex; outx < xindex + block_xlen && outx < xstop;
               outx += highest_sampling_boxlen)
           {
@@ -169,7 +169,7 @@ void Ray_Trace_Adaptively()
             Ray_Trace_Adaptive_Box(outx, outy, highest_sampling_boxlen);
           }
         }
-      }
+      }     
     }
   }
   #pragma omp taskwait
