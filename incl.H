@@ -21,6 +21,7 @@
 *************************************************************************/
 
 
+#include <omp.h>
 #include "user_options.h"       /* User options defined at compile time      */
 #include "const.h"              /* Constant definitions                      */
 #include "my_types.h"           /* User defined type                         */
@@ -31,4 +32,3 @@
 #include <math.h>               /* Definitions for mathematical library      */
 #include <limits.h>
 #include <sys/types.h>
-#include <omp.h>

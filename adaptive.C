@@ -147,12 +147,13 @@ void Ray_Trace_Adaptively()
   xstop = image_len[X];
   ystop = image_len[Y];
 
-  #pragma omp single
-  {    
+  //#pragma omp single
+  //{
+    #pragma omp for schedule(dynamic, 16) 
     for (work = 0; work < lnum_blocks; work++)
     {    
-      #pragma omp task
-      {
+      //#pragma omp task
+      //{
 
         xindex = (work % lnum_xblocks) * block_xlen;
         yindex = (work / lnum_xblocks) * block_ylen;
@@ -169,10 +170,10 @@ void Ray_Trace_Adaptively()
             Ray_Trace_Adaptive_Box(outx, outy, highest_sampling_boxlen);
           }
         }
-      }     
+      //}     
     }
-  }
-  #pragma omp taskwait
+  //}
+  //#pragma omp taskwait
 }
 
 void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
@@ -182,6 +183,7 @@ void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
   long min_volume_color, max_volume_color;
   float foutx, fouty;
   volatile long imask;
+  MPIXEL temp;
 
   PIXEL *pixel_address;
 
@@ -209,14 +211,16 @@ void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
 
   min_volume_color = MAX_PIXEL;
   max_volume_color = MIN_PIXEL;
-
+ 
   for (i = 0; i <= boxlen && outy + i < image_len[Y]; i += boxlen)
   {
     for (j = 0; j <= boxlen && outx + j < image_len[X]; j += boxlen)
     {
 
       /*reschedule processes here if rescheduling only at synch points on simulator*/
-
+      //Verifica se raiofoi traçado para o pixel (outx + i, outy + i)
+      
+      omp_set_lock(&writelock[(outy + i)*image_len[Y] + outx + i]);
       if (MASK_IMAGE(outy + i, outx + j) == 0)
       {
 
@@ -238,30 +242,34 @@ void Ray_Trace_Adaptive_Box(long outx, long outy, long boxlen)
 
         MASK_IMAGE(outy + i, outx + j) = RAY_TRACED;
       }
+      omp_unset_lock(&writelock[(outy + i)*image_len[Y] + outx + i]);
+      min_volume_color = MIN(IMAGE(outy + i, outx + j), min_volume_color);
+      max_volume_color = MAX(IMAGE(outy + i, outx + j), max_volume_color);
+      
     }
   }
-  for (i = 0; i <= boxlen && outy + i < image_len[Y]; i += boxlen)
+  
+  /*for (i = 0; i <= boxlen && outy + i < image_len[Y]; i += boxlen)
   {
     for (j = 0; j <= boxlen && outx + j < image_len[X]; j += boxlen)
     {
-      imask = MASK_IMAGE(outy + i, outx + j);
+      //imask = MASK_IMAGE(outy + i, outx + j);
 
-      /*reschedule processes here if rescheduling only at synch points on simulator*/
+      //reschedule processes here if rescheduling only at synch points on simulator
 
-      while (imask == START_RAY)
-      {
+      //while (imask == START_RAY)
+      //{
 
-        /*reschedule processes here if rescheduling only at synch points on simulator*/
+        //reschedule processes here if rescheduling only at synch points on simulator
 
-        imask = MASK_IMAGE(outy + i, outx + j);
-
-        /*reschedule processes here if rescheduling only at synch points on simulator*/
-      }
+        //imask = MASK_IMAGE(outy + i, outx + j);
+       //reschedule processes here if rescheduling only at synch points on simulator
+      //}
       min_volume_color = MIN(IMAGE(outy + i, outx + j), min_volume_color);
       max_volume_color = MAX(IMAGE(outy + i, outx + j), max_volume_color);
     }
-  }
-
+  }*/
+  
   /* If size of current box is above lowest size for volume data and   */
   /* magnitude of geometry/volume color difference is significant, or  */
   /* size of current box is above lowest size for geometric data and   */
@@ -300,7 +308,7 @@ void Ray_Trace_Non_Adaptively()
   lnum_yblocks = ROUNDUP((float)image_len[Y] / (float)block_ylen);
   lnum_blocks = lnum_xblocks * lnum_yblocks;
 
-  #pragma omp for schedule(dynamic, 8)
+  #pragma omp for schedule(dynamic, 16)
   for (work = 0; work < lnum_blocks; work++)
   {
     xindex = (work % lnum_xblocks) * block_xlen;

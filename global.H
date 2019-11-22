@@ -158,6 +158,7 @@ extern long mask_image_len[NI]; /* Size of mask image for adaptive ray trace */
 extern long mask_image_length;  /* Total number of pixels in mask image      */
 extern MPIXEL *mask_image_address;
                                 /* Pointer to image                          */
+extern omp_lock_t *writelock;								
 
 /* adaptive.c */
 void Ray_Trace();
@@ -191,6 +192,7 @@ void Lallocate_Image(PIXEL **address, long length);
 void Store_Image(char filename[]);
 void Allocate_Shading_Table(PIXEL **address1, long length);
 void Init_Decomposition(void);
+void Lallocate_MutexMatrix(omp_lock_t **mutexarray, long length);
 long WriteGrayscaleTIFF(char *filename, char *filename_txt, long width, long height, long scanbytes, unsigned char *data);
 
 /* map.c */

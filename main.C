@@ -57,6 +57,7 @@ long image_len[NI], mask_image_len[NI];
 int image_length;
 long mask_image_length;
 char filename[FILENAME_STRING_SIZE];
+omp_lock_t *writelock;
 
 void mclock(long stoptime, long starttime, long *exectime)
 {
@@ -110,6 +111,9 @@ int main(int argc, char *argv[])
       exit(-1);
     }
   }
+  
+  adaptive = YES;
+      output_txt = YES;
 
   Frame();
 
@@ -218,6 +222,7 @@ void Frame()
   return;
 #endif
 
+  
   if (adaptive)
   {
     printf("1.\n");
@@ -227,10 +232,15 @@ void Frame()
     }
     mask_image_length = image_length;
     Allocate_MImage(&mask_image_address, mask_image_length);
-    if (num_nodes == 1)
-      mask_image_block = (PIXEL *)mask_image_address;
-    else
-      Lallocate_Image(&mask_image_block, block_xlen * block_ylen);
+    
+    Lallocate_MutexMatrix(&writelock, image_length);
+    //if (num_nodes == 1)
+      //mask_image_block = (PIXEL *)mask_image_address;
+    //else
+    //  Lallocate_Image(&mask_image_block, block_xlen * block_ylen);
+    #pragma omp parallel for schedule(static, 8)
+    for(i = 0; i < image_length; i++)
+      omp_init_lock(&(writelock[i]));
     printf("2.\n");
   }
 
@@ -249,6 +259,13 @@ void Frame()
   #pragma omp parallel num_threads(num_nodes)
   {
     Render_Loop();
+  }
+
+  if (adaptive)
+  {
+    #pragma omp parallel for schedule(static, 8)
+    for(i = 0; i < image_length; i++)
+      omp_destroy_lock(&writelock[i]);
   }
 }
 
@@ -405,6 +422,14 @@ void Lallocate_Image(PIXEL **address, long length)
   *address = (PIXEL *)calloc(length, sizeof(PIXEL));
   if (*address == NULL)
     Error("    No space available for image.\n");
+}
+
+void Lallocate_MutexMatrix(omp_lock_t **mutexarray, long length)
+{
+  printf("    Allocating mutex of %ld bytes...\n", length * sizeof(omp_lock_t));
+  *mutexarray = (omp_lock_t *)malloc(length*sizeof(omp_lock_t));
+  if (*mutexarray == NULL)
+    Error("    No space available for mutex matrix.\n");
 }
 
 void Store_Image(char filename[])

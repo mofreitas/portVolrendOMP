@@ -26,7 +26,7 @@ if(len(sys.argv) == 2 and sys.argv[1]=="-v"):
 
             if(pad_l == -1):
                 pad_l = int((380-len(r))/2)
-                pad_r = int(np.floor((380-len(r))/2))
+                pad_r = int(np.ceil((380-len(r))/2))
 
             img[i, :] = np.pad(r, pad_width=(pad_l, pad_r), constant_values=(0, 0))
             
@@ -50,12 +50,19 @@ elif(len(sys.argv)):
     try:
         f = open(file, "r")
         i = 0
+        pad_r = -1
+        pad_l = -1
         for line in f.readlines():
             if(line == "\n" or line == ""):
                 continue
                             
             r = np.array(line.replace("\n", "0").split("|"), dtype=np.uint8)
-            img[i, 0:len(r)] = r
+            
+            if(pad_l == -1):
+                pad_l = int((380-len(r))/2)
+                pad_r = int(np.ceil((380-len(r))/2))
+
+            img[i, :] = np.pad(r, pad_width=(pad_l, pad_r), constant_values=(0, 0))
             i += 1
 
         print("Saída: {}.png".format(sys.argv[1].split(".")[0]))
