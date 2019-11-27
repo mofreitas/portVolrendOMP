@@ -150,22 +150,20 @@ void Compute_Base()
   ystop = pyr_len[0][Y];
   xstart = 0;
   xstop = pyr_len[0][X];
-  #pragma omp task
+  for (outz = zstart; outz < zstop; outz++)
   {
-    for (outz = zstart; outz < zstop; outz++)
-    {
+#pragma omp task
       for (outy = ystart; outy < ystop; outy++)
       {
-        for (outx = xstart; outx < xstop; outx++)
-        {
-        
-          if (OPC(outz, outy, outx) == 0)      /* mask bit is one unless opacity */
-            WRITE_PYR(0, 0, outz, outy, outx); /* value is zero.                 */
-          else
-            WRITE_PYR(1, 0, outz, outy, outx);
-        }
+	  for (outx = xstart; outx < xstop; outx++)
+	  {
+
+	      if (OPC(outz, outy, outx) == 0)      /* mask bit is one unless opacity */
+		  WRITE_PYR(0, 0, outz, outy, outx); /* value is zero.                 */
+	      else
+		  WRITE_PYR(1, 0, outz, outy, outx);
+	  }
       }
-    }
   }
 }
 

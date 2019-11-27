@@ -134,6 +134,7 @@ int main(int argc, char *argv[])
 void Frame()
 {
   long starttime, stoptime, exectime, i;
+  double time[2];
 
   Init_Options();
 
@@ -256,11 +257,15 @@ void Frame()
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_roi_begin();
 #endif
-
+   
+  time[0] = omp_get_wtime();
   #pragma omp parallel num_threads(num_nodes)
   {
     Render_Loop();
   }
+  time[1] = omp_get_wtime();
+  printf("Time Result:%lf\n",time[1] - time[0]);
+  fflush(stdout);
 
   if (adaptive)
   {

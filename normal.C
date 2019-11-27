@@ -113,48 +113,46 @@ void Normal_Compute()
   ystop = norm_len[Y];
   xstart = 0;
   xstop = norm_len[X];
-  #pragma omp task
+  for (outz = zstart; outz < zstop; outz++)
   {
-    for (outz = zstart; outz < zstop; outz++)
-    {
+#pragma omp task
       for (outy = ystart; outy < ystop; outy++)
       {
-        for (outx = xstart; outx < xstop; outx++)
-        {       
+	  for (outx = xstart; outx < xstop; outx++)
+	  {       
 
-          inx = INSET + outx;
-          iny = INSET + outy;
-          inz = INSET + outz;
+	      inx = INSET + outx;
+	      iny = INSET + outy;
+	      inz = INSET + outz;
 
-          /* Compute voxel gradient assuming gradient operator is 1x3     */
-          grd_x = (double)((long)MAP(inz, iny, inx + 1) - (long)MAP(inz, iny, inx - 1));
-          grd_y = (double)((long)MAP(inz, iny + 1, inx) - (long)MAP(inz, iny - 1, inx));
-          grd_z = (double)((long)MAP(inz + 1, iny, inx) - (long)MAP(inz - 1, iny, inx));
+	      /* Compute voxel gradient assuming gradient operator is 1x3     */
+	      grd_x = (double)((long)MAP(inz, iny, inx + 1) - (long)MAP(inz, iny, inx - 1));
+	      grd_y = (double)((long)MAP(inz, iny + 1, inx) - (long)MAP(inz, iny - 1, inx));
+	      grd_z = (double)((long)MAP(inz + 1, iny, inx) - (long)MAP(inz - 1, iny, inx));
 
-          /* Compute (magnitude*grd_divisor)**2 of gradient               */
-          /* Reduce (magnitude*grd_divisor)**2 to magnitude*grd_divisor   */
-          /* Reduce magnitude*grd_divisor to magnitude                    */
-          magnitude = grd_x * grd_x + grd_y * grd_y + grd_z * grd_z;
+	      /* Compute (magnitude*grd_divisor)**2 of gradient               */
+	      /* Reduce (magnitude*grd_divisor)**2 to magnitude*grd_divisor   */
+	      /* Reduce magnitude*grd_divisor to magnitude                    */
+	      magnitude = grd_x * grd_x + grd_y * grd_y + grd_z * grd_z;
 
-          local_norm_address = NORM_ADDRESS(outz, outy, outx, X);
-          if (magnitude > SMALL)
-          {
-            inv_mag_shift = norm_lshift / sqrt(magnitude);
-            if (grd_x * inv_mag_shift > 0.0)
-              xnorm = 1;
-            else
-              xnorm = 0;
-            ynorm = (long)(grd_y * inv_mag_shift);
-            znorm = (long)(grd_z * inv_mag_shift);
-            *local_norm_address = TADDR(znorm, ynorm, xnorm);
-          }
-          else
-          {
-            *local_norm_address = TADDR(norm0, 2, 1);
-          }
-        }
+	      local_norm_address = NORM_ADDRESS(outz, outy, outx, X);
+	      if (magnitude > SMALL)
+	      {
+		  inv_mag_shift = norm_lshift / sqrt(magnitude);
+		  if (grd_x * inv_mag_shift > 0.0)
+		      xnorm = 1;
+		  else
+		      xnorm = 0;
+		  ynorm = (long)(grd_y * inv_mag_shift);
+		  znorm = (long)(grd_z * inv_mag_shift);
+		  *local_norm_address = TADDR(znorm, ynorm, xnorm);
+	      }
+	      else
+	      {
+		  *local_norm_address = TADDR(norm0, 2, 1);
+	      }
+	  }
       }
-    }
   }
 }
 

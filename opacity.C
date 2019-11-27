@@ -111,50 +111,50 @@ void Opacity_Compute()
   ystop = opc_len[Y];
   xstart = 0;
   xstop = opc_len[X];
-  #pragma omp task
+  
+  for (outz = zstart; outz < zstop; outz++)
   {
-    for (outz = zstart; outz < zstop; outz++)
-    {
+      #pragma omp task
       for (outy = ystart; outy < ystop; outy++)
       {
-        for (outx = xstart; outx < xstop; outx++)
-        {
-        
+	  for (outx = xstart; outx < xstop; outx++)
+	  {
 
-          inx = INSET + outx;
-          iny = INSET + outy;
-          inz = INSET + outz;
 
-          density = MAP(inz, iny, inx);
-          if (density > density_epsilon)
-          {
+	      inx = INSET + outx;
+	      iny = INSET + outy;
+	      inz = INSET + outz;
 
-            grd_x = (float)((long)MAP(inz, iny, inx + 1) - (long)MAP(inz, iny, inx - 1));
-            grd_y = (float)((long)MAP(inz, iny + 1, inx) - (long)MAP(inz, iny - 1, inx));
-            grd_z = (float)((long)MAP(inz + 1, iny, inx) - (long)MAP(inz - 1, iny, inx));
-            magnitude = grd_x * grd_x + grd_y * grd_y + grd_z * grd_z;
+	      density = MAP(inz, iny, inx);
+	      if (density > density_epsilon)
+	      {
 
-            /* If (magnitude*grd_divisor)**2 is small, skip voxel             */
-            if (magnitude > nmag_epsilon)
-            {
-              magnitude = .5 * sqrt(magnitude);
-              /* For density * magnitude (d*m) operator:                      */
-              /*   Set opacity of surface to the product of user-specified    */
-              /*   functions of local density and gradient magnitude.         */
-              /*   Detects both front and rear-facing surfaces.               */
-              opacity = density_opacity[density] *
-                        magnitude_opacity[(long)magnitude];
-              /* If opacity is small, skip shading and compositing of sample  */
-              if (opacity > opacity_epsilon)
-                OPC(outz, outy, outx) = NINT(opacity * MAX_OPC);
-            }
-          }
-          else
-            OPC(outz, outy, outx) = MIN_OPC;
-        }
+		  grd_x = (float)((long)MAP(inz, iny, inx + 1) - (long)MAP(inz, iny, inx - 1));
+		  grd_y = (float)((long)MAP(inz, iny + 1, inx) - (long)MAP(inz, iny - 1, inx));
+		  grd_z = (float)((long)MAP(inz + 1, iny, inx) - (long)MAP(inz - 1, iny, inx));
+		  magnitude = grd_x * grd_x + grd_y * grd_y + grd_z * grd_z;
+
+		  /* If (magnitude*grd_divisor)**2 is small, skip voxel             */
+		  if (magnitude > nmag_epsilon)
+		  {
+		      magnitude = .5 * sqrt(magnitude);
+		      /* For density * magnitude (d*m) operator:                      */
+		      /*   Set opacity of surface to the product of user-specified    */
+		      /*   functions of local density and gradient magnitude.         */
+		      /*   Detects both front and rear-facing surfaces.               */
+		      opacity = density_opacity[density] *
+			  magnitude_opacity[(long)magnitude];
+		      /* If opacity is small, skip shading and compositing of sample  */
+		      if (opacity > opacity_epsilon)
+			  OPC(outz, outy, outx) = NINT(opacity * MAX_OPC);
+		  }
+	      }
+	      else
+		  OPC(outz, outy, outx) = MIN_OPC;
+	  }
       }
-    }
   }
+  
 }
 
 void Load_Opacity(filename) char filename[];
