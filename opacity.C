@@ -111,15 +111,15 @@ void Opacity_Compute()
   ystop = opc_len[Y];
   xstart = 0;
   xstop = opc_len[X];
-
-  for (outz = zstart; outz < zstop; outz++)
+  #pragma omp task
   {
-    for (outy = ystart; outy < ystop; outy++)
+    for (outz = zstart; outz < zstop; outz++)
     {
-      for (outx = xstart; outx < xstop; outx++)
+      for (outy = ystart; outy < ystop; outy++)
       {
-        #pragma omp task
+        for (outx = xstart; outx < xstop; outx++)
         {
+        
 
           inx = INSET + outx;
           iny = INSET + outy;

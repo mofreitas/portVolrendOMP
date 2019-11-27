@@ -149,7 +149,7 @@ void Ray_Trace_Adaptively()
 
   //#pragma omp single
   //{
-    #pragma omp for schedule(dynamic, 1) 
+    #pragma omp for schedule(dynamic, 4) 
     for (work = 0; work < lnum_blocks; work++)
     {    
       //#pragma omp task
@@ -308,7 +308,7 @@ void Ray_Trace_Non_Adaptively()
   lnum_yblocks = ROUNDUP((float)image_len[Y] / (float)block_ylen);
   lnum_blocks = lnum_xblocks * lnum_yblocks;
 
-  #pragma omp for schedule(dynamic, 1)
+  #pragma omp for schedule(dynamic, 4)
   for (work = 0; work < lnum_blocks; work++)
   {
     xindex = (work % lnum_xblocks) * block_xlen;
