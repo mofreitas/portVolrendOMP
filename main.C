@@ -72,6 +72,10 @@ int main(int argc, char *argv[])
 #ifdef ENABLE_PARSEC_HOOKS
   __parsec_bench_begin(__splash2_volrend);
 #endif
+  printf("----------------------------------------------\n");
+  printf("RODANDO VERSAO PORTADA DO VOLREND\n");
+  printf("----------------------------------------------\n");
+
   if ((argc < 4) || (strncmp(argv[1], "-h", strlen("-h")) == 0) || (strncmp(argv[1], "-h", strlen("-H")) == 0))
   {
     printf("usage:  VOLREND num_processes input_file ROTATE_STEPS\n");
@@ -111,9 +115,6 @@ int main(int argc, char *argv[])
       exit(-1);
     }
   }
-  
-  adaptive = YES;
-      output_txt = YES;
 
   Frame();
 
@@ -136,13 +137,13 @@ void Frame()
 
   Init_Options();
 
-  printf("*****Entering init_decomposition with num_nodes = %ld\n", num_nodes);
-  fflush(stdout);
+  //printf("*****Entering init_decomposition with num_nodes = %ld\n", num_nodes);
+  //fflush(stdout);
 
-  Init_Decomposition();
+  //Init_Decomposition();
 
-  printf("*****Exited init_decomposition with num_nodes = %ld\n", num_nodes);
-  fflush(stdout);
+  //printf("*****Exited init_decomposition with num_nodes = %ld\n", num_nodes);
+  //fflush(stdout);
 
   /* load dataset from file to each node */
 #ifndef RENDER_ONLY

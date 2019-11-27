@@ -45,9 +45,9 @@ case "${INPUTSIZE}" in
 "simmedium"	) 
 	PROGARGS="${NUMPROCS} head-scaleddown2 50";;
 "simlarge"	) 
-	PROGARGS="${NUMPROCS} head-scaleddown2 100";;
+	PROGARGS="${NUMPROCS} head-scaleddown2 250";;
 "native"	) 
-	PROGARGS="${NUMPROCS} head 1000";;
+	PROGARGS="${NUMPROCS} head 100";;
 *)  
 	echo "Input size error"
 	exit 1;;
